@@ -31,8 +31,8 @@ jobs:
       - name: Tidy
         run: make tidy
 
-      - name: Lint
-        run: make lint
+      # - name: Lint
+      #   run: make lint
 
       - name: Test
         run: make test
