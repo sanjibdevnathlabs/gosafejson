@@ -108,6 +108,7 @@ type IgnoreDeeperLevelE2 struct {
 	IgnoreDeeperLevelDoubleEmbedded
 }
 
+//nolint:govet
 type IgnoreDeeperLevel struct {
 	IgnoreDeeperLevelE1
 	IgnoreDeeperLevelE2
@@ -121,6 +122,7 @@ type SameLevel1BothTaggedE2 struct {
 	F1 int32 `json:"F1"`
 }
 
+//nolint:govet
 type SameLevel1BothTagged struct {
 	SameLevel1BothTaggedE1
 	SameLevel1BothTaggedE2
@@ -170,6 +172,7 @@ type SameLevel2BothTaggedE2 struct {
 	SameLevel2BothTaggedDE2
 }
 
+//nolint:govet
 type SameLevel2BothTagged struct {
 	SameLevel2BothTaggedE1
 	SameLevel2BothTaggedE2

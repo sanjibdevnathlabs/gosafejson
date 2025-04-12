@@ -1,4 +1,4 @@
-package jsoniter
+package gosafejson
 
 import (
 	"fmt"
@@ -220,48 +220,19 @@ func (iter *Iterator) ReadMapCB(callback func(*Iterator, string) bool) bool {
 
 func (iter *Iterator) readObjectStart() bool {
 	c := iter.nextToken()
-	if c == '{' {
+	switch c {
+	case '{':
 		c = iter.nextToken()
 		if c == '}' {
 			return false
 		}
 		iter.unreadByte()
 		return true
-	} else if c == 'n' {
+	case 'n':
 		iter.skipThreeBytes('u', 'l', 'l')
 		return false
+	default:
+		iter.ReportError("readObjectStart", "expect { or n, but found "+string([]byte{c}))
+		return false
 	}
-	iter.ReportError("readObjectStart", "expect { or n, but found "+string([]byte{c}))
-	return false
-}
-
-func (iter *Iterator) readObjectFieldAsBytes() (ret []byte) {
-	str := iter.ReadStringAsSlice()
-	if iter.skipWhitespacesWithoutLoadMore() {
-		if ret == nil {
-			ret = make([]byte, len(str))
-			copy(ret, str)
-		}
-		if !iter.loadMore() {
-			return
-		}
-	}
-	if iter.buf[iter.head] != ':' {
-		iter.ReportError("readObjectFieldAsBytes", "expect : after object field, but found "+string([]byte{iter.buf[iter.head]}))
-		return
-	}
-	iter.head++
-	if iter.skipWhitespacesWithoutLoadMore() {
-		if ret == nil {
-			ret = make([]byte, len(str))
-			copy(ret, str)
-		}
-		if !iter.loadMore() {
-			return
-		}
-	}
-	if ret == nil {
-		return str
-	}
-	return ret
 }

@@ -57,7 +57,7 @@ func init() {
         "2018-12-14": true
     	}`,
 	}, unmarshalCase{
-		ptr: (*map[customKey]string)(nil),
+		ptr:   (*map[customKey]string)(nil),
 		input: `{"foo": "bar"}`,
 	})
 }
@@ -93,14 +93,14 @@ func (d *Date) UnmarshalJSON(b []byte) error {
 }
 
 func (d *Date) MarshalJSON() ([]byte, error) {
-	return []byte(d.Time.Format("2006-01-02")), nil
+	return []byte(d.Format("2006-01-02")), nil
 }
 
 type Date2 struct {
 	time.Time
 }
 
-func (d Date2) UnmarshalJSON(b []byte) error {
+func (d *Date2) UnmarshalJSON(b []byte) error {
 	dateStr := string(b) // something like `"2017-08-20"`
 
 	if dateStr == "null" {
@@ -117,7 +117,7 @@ func (d Date2) UnmarshalJSON(b []byte) error {
 }
 
 func (d Date2) MarshalJSON() ([]byte, error) {
-	return []byte(d.Time.Format("2006-01-02")), nil
+	return []byte(d.Format("2006-01-02")), nil
 }
 
 type customKey int32

@@ -1,0 +1,76 @@
+# .goreleaser.yml
+# Configuration for Goreleaser (https://goreleaser.com/)
+
+before:
+  hooks:
+    # Ensure dependencies are tidy before release
+    - go mod tidy
+
+# We are releasing a library, so no binary builds are needed.
+builds:
+  - skip: true
+
+# Create source archive
+archives:
+  - format: tar.gz
+    # this name template makes the OS and Arch compatible with the results of goreleaser default naming scheme when used with Go binaries
+    name_template: "{{ .ProjectName }}_{{ .Version }}_source"
+    files:
+      - LICENSE
+      - README.md
+      - go.mod
+      - go.sum
+      - "*.go"
+      - ".github/**/*"
+      - "api_tests/**/*"
+      - "any_tests/**/*"
+      - "benchmarks/**/*"
+      - "extension_tests/**/*"
+      - "extra/**/*"
+      - "misc_tests/**/*"
+      - "skip_tests/**/*"
+      - "type_tests/**/*"
+      - "value_tests/**/*"
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+      - Merge pull request
+      - Merge branch
+
+# Does not publish to any package managers. Only creates GitHub release.
+release:
+  # Repo in which the release will be created. Defaults to the current repo.
+  # github:
+  #   owner: sanjibdevnathlabs
+  #   name: gosafejson
+
+  # If set to true, will not auto-publish the release.
+  # Default is false.
+  draft: false
+
+  # If set to true, will mark the release as a pre-release.
+  # Default is false.
+  prerelease: auto
+
+  # You can change the name of the release. Defaults to "{{.Tag}}"
+  # name_template: "{{.ProjectName}}-v{{.Version}}"
+
+  # Header template for the release body. Defaults to empty.
+  # header: |
+  #   This is the header
+  #   of the release notes.
+
+  # Footer template for the release body. Defaults to empty.
+  # footer: |
+  #   Released by Goreleaser

@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"testing"
 
-	jsoniter "github.com/json-iterator/go"
+	"github.com/sanjibdevnathlabs/gosafejson"
 	"github.com/stretchr/testify/require"
 )
 
@@ -20,14 +20,14 @@ func Test_read_float(t *testing.T) {
 		// non-streaming
 		t.Run(fmt.Sprintf("%v", input), func(t *testing.T) {
 			should := require.New(t)
-			iter := jsoniter.ParseString(jsoniter.ConfigDefault, input+",")
+			iter := gosafejson.ParseString(gosafejson.ConfigDefault, input+",")
 			expected, err := strconv.ParseFloat(input, 32)
 			should.Nil(err)
 			should.Equal(float32(expected), iter.ReadFloat32())
 		})
 		t.Run(fmt.Sprintf("%v", input), func(t *testing.T) {
 			should := require.New(t)
-			iter := jsoniter.ParseString(jsoniter.ConfigDefault, input+",")
+			iter := gosafejson.ParseString(gosafejson.ConfigDefault, input+",")
 			expected, err := strconv.ParseFloat(input, 64)
 			should.Nil(err)
 			should.Equal(expected, iter.ReadFloat64())
@@ -35,14 +35,14 @@ func Test_read_float(t *testing.T) {
 		// streaming
 		t.Run(fmt.Sprintf("%v", input), func(t *testing.T) {
 			should := require.New(t)
-			iter := jsoniter.Parse(jsoniter.ConfigDefault, bytes.NewBufferString(input+","), 2)
+			iter := gosafejson.Parse(gosafejson.ConfigDefault, bytes.NewBufferString(input+","), 2)
 			expected, err := strconv.ParseFloat(input, 32)
 			should.Nil(err)
 			should.Equal(float32(expected), iter.ReadFloat32())
 		})
 		t.Run(fmt.Sprintf("%v", input), func(t *testing.T) {
 			should := require.New(t)
-			iter := jsoniter.Parse(jsoniter.ConfigDefault, bytes.NewBufferString(input+","), 2)
+			iter := gosafejson.Parse(gosafejson.ConfigDefault, bytes.NewBufferString(input+","), 2)
 			val := float64(0)
 			err := json.Unmarshal([]byte(input), &val)
 			should.Nil(err)
@@ -58,7 +58,7 @@ func Test_write_float32(t *testing.T) {
 		t.Run(fmt.Sprintf("%v", val), func(t *testing.T) {
 			should := require.New(t)
 			buf := &bytes.Buffer{}
-			stream := jsoniter.NewStream(jsoniter.ConfigDefault, buf, 4096)
+			stream := gosafejson.NewStream(gosafejson.ConfigDefault, buf, 4096)
 			stream.WriteFloat32Lossy(val)
 			stream.Flush()
 			should.Nil(stream.Error)
@@ -69,7 +69,7 @@ func Test_write_float32(t *testing.T) {
 		t.Run(fmt.Sprintf("%v", val), func(t *testing.T) {
 			should := require.New(t)
 			buf := &bytes.Buffer{}
-			stream := jsoniter.NewStream(jsoniter.ConfigDefault, buf, 4096)
+			stream := gosafejson.NewStream(gosafejson.ConfigDefault, buf, 4096)
 			stream.WriteVal(val)
 			stream.Flush()
 			should.Nil(stream.Error)
@@ -80,14 +80,14 @@ func Test_write_float32(t *testing.T) {
 	}
 	should := require.New(t)
 	buf := &bytes.Buffer{}
-	stream := jsoniter.NewStream(jsoniter.ConfigDefault, buf, 10)
+	stream := gosafejson.NewStream(gosafejson.ConfigDefault, buf, 10)
 	stream.WriteRaw("abcdefg")
 	stream.WriteFloat32Lossy(1.123456)
 	stream.Flush()
 	should.Nil(stream.Error)
 	should.Equal("abcdefg1.123456", buf.String())
 
-	stream = jsoniter.NewStream(jsoniter.ConfigDefault, nil, 0)
+	stream = gosafejson.NewStream(gosafejson.ConfigDefault, nil, 0)
 	stream.WriteFloat32(float32(0.0000001))
 	should.Equal("1e-7", string(stream.Buffer()))
 }
@@ -99,7 +99,7 @@ func Test_write_float64(t *testing.T) {
 		t.Run(fmt.Sprintf("%v", val), func(t *testing.T) {
 			should := require.New(t)
 			buf := &bytes.Buffer{}
-			stream := jsoniter.NewStream(jsoniter.ConfigDefault, buf, 4096)
+			stream := gosafejson.NewStream(gosafejson.ConfigDefault, buf, 4096)
 			stream.WriteFloat64Lossy(val)
 			stream.Flush()
 			should.Nil(stream.Error)
@@ -108,7 +108,7 @@ func Test_write_float64(t *testing.T) {
 		t.Run(fmt.Sprintf("%v", val), func(t *testing.T) {
 			should := require.New(t)
 			buf := &bytes.Buffer{}
-			stream := jsoniter.NewStream(jsoniter.ConfigDefault, buf, 4096)
+			stream := gosafejson.NewStream(gosafejson.ConfigDefault, buf, 4096)
 			stream.WriteVal(val)
 			stream.Flush()
 			should.Nil(stream.Error)
@@ -117,14 +117,14 @@ func Test_write_float64(t *testing.T) {
 	}
 	should := require.New(t)
 	buf := &bytes.Buffer{}
-	stream := jsoniter.NewStream(jsoniter.ConfigDefault, buf, 10)
+	stream := gosafejson.NewStream(gosafejson.ConfigDefault, buf, 10)
 	stream.WriteRaw("abcdefg")
 	stream.WriteFloat64Lossy(1.123456)
 	stream.Flush()
 	should.Nil(stream.Error)
 	should.Equal("abcdefg1.123456", buf.String())
 
-	stream = jsoniter.NewStream(jsoniter.ConfigDefault, nil, 0)
+	stream = gosafejson.NewStream(gosafejson.ConfigDefault, nil, 0)
 	stream.WriteFloat64(float64(0.0000001))
 	should.Equal("1e-7", string(stream.Buffer()))
 }

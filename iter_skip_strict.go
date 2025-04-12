@@ -1,26 +1,33 @@
-//+build !jsoniter_sloppy
+//go:build !jsoniter_sloppy
+// +build !jsoniter_sloppy
 
-package jsoniter
+package gosafejson
 
 import (
 	"fmt"
 	"io"
 )
 
+// Reverted skipNumber
 func (iter *Iterator) skipNumber() {
 	if !iter.trySkipNumber() {
 		iter.unreadByte()
 		if iter.Error != nil && iter.Error != io.EOF {
 			return
 		}
+		// Use ReadFloat64 for strict validation (handles leading zeros)
 		iter.ReadFloat64()
+		// If ReadFloat64 reported a format error (or any non-EOF error),
+		// that error is the result for Skip(). Return immediately.
 		if iter.Error != nil && iter.Error != io.EOF {
-			iter.Error = nil
-			iter.ReadBigFloat()
+			return // Keep error from ReadFloat64, do not attempt ReadBigFloat
 		}
+		// If ReadFloat64 succeeded or only hit EOF, the skip is successful for validation purposes.
+		// We don't need to read the potentially larger number with ReadBigFloat for Skip().
 	}
 }
 
+// Reverted trySkipNumber
 func (iter *Iterator) trySkipNumber() bool {
 	dotFound := false
 	for i := iter.head; i < iter.tail; i++ {
@@ -58,6 +65,7 @@ func (iter *Iterator) trySkipNumber() bool {
 	return false
 }
 
+// Reverted skipString
 func (iter *Iterator) skipString() {
 	if !iter.trySkipString() {
 		iter.unreadByte()
@@ -65,6 +73,7 @@ func (iter *Iterator) skipString() {
 	}
 }
 
+// Reverted trySkipString
 func (iter *Iterator) trySkipString() bool {
 	for i := iter.head; i < iter.tail; i++ {
 		c := iter.buf[i]
@@ -82,6 +91,7 @@ func (iter *Iterator) trySkipString() bool {
 	return false
 }
 
+// Reverted skipObject
 func (iter *Iterator) skipObject() {
 	iter.unreadByte()
 	iter.ReadObjectCB(func(iter *Iterator, field string) bool {
@@ -90,6 +100,7 @@ func (iter *Iterator) skipObject() {
 	})
 }
 
+// Reverted skipArray
 func (iter *Iterator) skipArray() {
 	iter.unreadByte()
 	iter.ReadArrayCB(func(iter *Iterator) bool {

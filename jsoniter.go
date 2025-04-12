@@ -8,11 +8,11 @@
 // (https://golang.org/doc/articles/json_and_go.html)
 // gives a description of how Marshal/Unmarshal operate
 // between arbitrary or predefined json objects and bytes,
-// and it applies to jsoniter.Marshal/Unmarshal as well.
+// and it applies to gosafejson.Marshal/Unmarshal as well.
 //
-// Besides, jsoniter.Iterator provides a different set of interfaces
+// Besides, gosafejson.Iterator provides a different set of interfaces
 // iterating given bytes/string/reader
 // and yielding parsed elements one by one.
 // This set of interfaces reads input as required and gives
 // better performance.
-package jsoniter
+package gosafejson

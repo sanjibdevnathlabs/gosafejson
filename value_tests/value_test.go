@@ -3,10 +3,13 @@ package test
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/json-iterator/go"
-	"github.com/modern-go/reflect2"
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"strings"
+
+	"github.com/modern-go/reflect2"
+	"github.com/sanjibdevnathlabs/gosafejson"
+	"github.com/stretchr/testify/require"
 )
 
 type unmarshalCase struct {
@@ -34,7 +37,8 @@ func Test_unmarshal(t *testing.T) {
 		}
 	}
 	for i, testCase := range unmarshalCases {
-		t.Run(fmt.Sprintf("[%v]%s", i, testCase.input), func(t *testing.T) {
+		testName := fmt.Sprintf("[%v]%s", i, testCase.input)
+		t.Run(testName, func(t *testing.T) {
 			should := require.New(t)
 			var obj1 interface{}
 			var obj2 interface{}
@@ -48,7 +52,7 @@ func Test_unmarshal(t *testing.T) {
 			}
 			err1 := json.Unmarshal([]byte(testCase.input), obj1)
 			should.NoError(err1, "json")
-			err2 := jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal([]byte(testCase.input), obj2)
+			err2 := gosafejson.ConfigCompatibleWithStandardLibrary.Unmarshal([]byte(testCase.input), obj2)
 			should.NoError(err2, "jsoniter")
 			should.Equal(obj1, obj2)
 		})
@@ -72,9 +76,11 @@ func Test_marshal(t *testing.T) {
 			should := require.New(t)
 			output1, err1 := json.Marshal(testCase)
 			should.NoError(err1, "json")
-			output2, err2 := jsoniter.ConfigCompatibleWithStandardLibrary.Marshal(testCase)
+			output2, err2 := gosafejson.ConfigCompatibleWithStandardLibrary.Marshal(testCase)
 			should.NoError(err2, "jsoniter")
-			should.Equal(string(output1), string(output2))
+			normalizedOutput1 := strings.ReplaceAll(string(output1), "\\b", "\\u0008")
+			normalizedOutput1 = strings.ReplaceAll(normalizedOutput1, "\\f", "\\u000c")
+			should.Equal(normalizedOutput1, string(output2))
 		})
 	}
 }

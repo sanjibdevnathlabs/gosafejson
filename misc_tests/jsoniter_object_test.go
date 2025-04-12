@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/json-iterator/go"
+	"github.com/sanjibdevnathlabs/gosafejson"
 	"github.com/stretchr/testify/require"
 	"strings"
 	"time"
@@ -13,11 +13,11 @@ import (
 
 func Test_empty_object(t *testing.T) {
 	should := require.New(t)
-	iter := jsoniter.ParseString(jsoniter.ConfigDefault, `{}`)
+	iter := gosafejson.ParseString(gosafejson.ConfigDefault, `{}`)
 	field := iter.ReadObject()
 	should.Equal("", field)
-	iter = jsoniter.ParseString(jsoniter.ConfigDefault, `{}`)
-	iter.ReadObjectCB(func(iter *jsoniter.Iterator, field string) bool {
+	iter = gosafejson.ParseString(gosafejson.ConfigDefault, `{}`)
+	iter.ReadObjectCB(func(iter *gosafejson.Iterator, field string) bool {
 		should.FailNow("should not call")
 		return true
 	})
@@ -25,15 +25,15 @@ func Test_empty_object(t *testing.T) {
 
 func Test_one_field(t *testing.T) {
 	should := require.New(t)
-	iter := jsoniter.ParseString(jsoniter.ConfigDefault, `{"a": "stream"}`)
+	iter := gosafejson.ParseString(gosafejson.ConfigDefault, `{"a": "stream"}`)
 	field := iter.ReadObject()
 	should.Equal("a", field)
 	value := iter.ReadString()
 	should.Equal("stream", value)
 	field = iter.ReadObject()
 	should.Equal("", field)
-	iter = jsoniter.ParseString(jsoniter.ConfigDefault, `{"a": "stream"}`)
-	should.True(iter.ReadObjectCB(func(iter *jsoniter.Iterator, field string) bool {
+	iter = gosafejson.ParseString(gosafejson.ConfigDefault, `{"a": "stream"}`)
+	should.True(iter.ReadObjectCB(func(iter *gosafejson.Iterator, field string) bool {
 		should.Equal("a", field)
 		iter.Skip()
 		return true
@@ -43,7 +43,7 @@ func Test_one_field(t *testing.T) {
 
 func Test_two_field(t *testing.T) {
 	should := require.New(t)
-	iter := jsoniter.ParseString(jsoniter.ConfigDefault, `{ "a": "stream" , "c": "d" }`)
+	iter := gosafejson.ParseString(gosafejson.ConfigDefault, `{ "a": "stream" , "c": "d" }`)
 	field := iter.ReadObject()
 	should.Equal("a", field)
 	value := iter.ReadString()
@@ -54,7 +54,7 @@ func Test_two_field(t *testing.T) {
 	should.Equal("d", value)
 	field = iter.ReadObject()
 	should.Equal("", field)
-	iter = jsoniter.ParseString(jsoniter.ConfigDefault, `{"field1": "1", "field2": 2}`)
+	iter = gosafejson.ParseString(gosafejson.ConfigDefault, `{"field1": "1", "field2": 2}`)
 	for field := iter.ReadObject(); field != ""; field = iter.ReadObject() {
 		switch field {
 		case "field1":
@@ -70,7 +70,7 @@ func Test_two_field(t *testing.T) {
 func Test_write_object(t *testing.T) {
 	should := require.New(t)
 	buf := &bytes.Buffer{}
-	stream := jsoniter.NewStream(jsoniter.Config{IndentionStep: 2}.Froze(), buf, 4096)
+	stream := gosafejson.NewStream(gosafejson.Config{IndentionStep: 2}.Froze(), buf, 4096)
 	stream.WriteObjectStart()
 	stream.WriteObjectField("hello")
 	stream.WriteInt(1)
@@ -127,7 +127,7 @@ func Test_reader_and_load_more(t *testing.T) {
 	"status": "approved"
 }
 	`)
-	decoder := jsoniter.ConfigCompatibleWithStandardLibrary.NewDecoder(reader)
+	decoder := gosafejson.ConfigCompatibleWithStandardLibrary.NewDecoder(reader)
 	obj := TestObject{}
 	should.Nil(decoder.Decode(&obj))
 }
@@ -141,7 +141,7 @@ func Test_unmarshal_into_existing_value(t *testing.T) {
 	var obj TestObject
 	m := map[string]interface{}{}
 	obj.Field2 = &m
-	cfg := jsoniter.Config{UseNumber: true}.Froze()
+	cfg := gosafejson.Config{UseNumber: true}.Froze()
 	err := cfg.Unmarshal([]byte(`{"Field1":1,"Field2":{"k":"v"}}`), &obj)
 	should.NoError(err)
 	should.Equal(map[string]interface{}{
@@ -156,12 +156,12 @@ func Test_unmarshal_anonymous_struct_invalid(t *testing.T) {
 		Field1 string
 	}{}
 
-	cfg := jsoniter.ConfigCompatibleWithStandardLibrary
+	cfg := gosafejson.ConfigCompatibleWithStandardLibrary
 	err := cfg.UnmarshalFromString(`{"Field1":`, &t0)
 	should.NotNil(err)
 	should.NotContains(err.Error(), reflect.TypeOf(t0).String())
 
-	cfgCaseSensitive := jsoniter.Config{
+	cfgCaseSensitive := gosafejson.Config{
 		CaseSensitive: true,
 	}.Froze()
 

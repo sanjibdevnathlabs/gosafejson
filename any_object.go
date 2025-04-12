@@ -1,4 +1,4 @@
-package jsoniter
+package gosafejson
 
 import (
 	"reflect"
@@ -129,7 +129,7 @@ func (any *objectLazyAny) Size() int {
 }
 
 func (any *objectLazyAny) WriteTo(stream *Stream) {
-	stream.Write(any.buf)
+	_, _ = stream.Write(any.buf)
 }
 
 func (any *objectLazyAny) GetInterface() interface{} {

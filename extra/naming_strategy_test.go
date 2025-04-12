@@ -1,7 +1,7 @@
 package extra
 
 import (
-	"github.com/json-iterator/go"
+	"github.com/sanjibdevnathlabs/gosafejson"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -11,7 +11,7 @@ func Test_lower_case_with_underscores(t *testing.T) {
 	should.Equal("hello_world", LowerCaseWithUnderscores("helloWorld"))
 	should.Equal("hello_world", LowerCaseWithUnderscores("HelloWorld"))
 	SetNamingStrategy(LowerCaseWithUnderscores)
-	output, err := jsoniter.Marshal(struct {
+	output, err := gosafejson.Marshal(struct {
 		UserName      string
 		FirstLanguage string
 	}{
@@ -25,7 +25,7 @@ func Test_lower_case_with_underscores(t *testing.T) {
 func Test_set_naming_strategy_with_overrides(t *testing.T) {
 	should := require.New(t)
 	SetNamingStrategy(LowerCaseWithUnderscores)
-	output, err := jsoniter.Marshal(struct {
+	output, err := gosafejson.Marshal(struct {
 		UserName      string `json:"UserName"`
 		FirstLanguage string
 	}{
@@ -39,7 +39,7 @@ func Test_set_naming_strategy_with_overrides(t *testing.T) {
 func Test_set_naming_strategy_with_omitempty(t *testing.T) {
 	should := require.New(t)
 	SetNamingStrategy(LowerCaseWithUnderscores)
-	output, err := jsoniter.Marshal(struct {
+	output, err := gosafejson.Marshal(struct {
 		UserName      string
 		FirstLanguage string `json:",omitempty"`
 	}{
@@ -52,7 +52,7 @@ func Test_set_naming_strategy_with_omitempty(t *testing.T) {
 func Test_set_naming_strategy_with_private_field(t *testing.T) {
 	should := require.New(t)
 	SetNamingStrategy(LowerCaseWithUnderscores)
-	output, err := jsoniter.Marshal(struct {
+	output, err := gosafejson.Marshal(struct {
 		UserName string
 		userId   int
 		_UserAge int

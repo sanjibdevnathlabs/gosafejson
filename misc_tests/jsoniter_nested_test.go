@@ -2,10 +2,11 @@ package misc_tests
 
 import (
 	"encoding/json"
-	"github.com/json-iterator/go"
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/sanjibdevnathlabs/gosafejson"
 )
 
 type Level1 struct {
@@ -17,8 +18,6 @@ type Level2 struct {
 }
 
 func Test_deep_nested(t *testing.T) {
-	type unstructured interface{}
-
 	testcases := []struct {
 		name        string
 		data        []byte
@@ -235,7 +234,7 @@ func Test_deep_nested(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			for _, target := range targets {
 				t.Run(target.name, func(t *testing.T) {
-					err := jsoniter.Unmarshal(tc.data, target.new())
+					err := gosafejson.Unmarshal(tc.data, target.new())
 					if len(tc.expectError) == 0 {
 						if err != nil {
 							t.Errorf("unexpected error: %v", err)
@@ -254,7 +253,7 @@ func Test_deep_nested(t *testing.T) {
 }
 
 func Test_nested(t *testing.T) {
-	iter := jsoniter.ParseString(jsoniter.ConfigDefault, `{"hello": [{"world": "value1"}, {"world": "value2"}]}`)
+	iter := gosafejson.ParseString(gosafejson.ConfigDefault, `{"hello": [{"world": "value1"}, {"world": "value2"}]}`)
 	l1 := Level1{}
 	for l1Field := iter.ReadObject(); l1Field != ""; l1Field = iter.ReadObject() {
 		switch l1Field {
@@ -289,7 +288,7 @@ func Test_nested(t *testing.T) {
 
 func Benchmark_jsoniter_nested(b *testing.B) {
 	for n := 0; n < b.N; n++ {
-		iter := jsoniter.ParseString(jsoniter.ConfigDefault, `{"hello": [{"world": "value1"}, {"world": "value2"}]}`)
+		iter := gosafejson.ParseString(gosafejson.ConfigDefault, `{"hello": [{"world": "value1"}, {"world": "value2"}]}`)
 		l1 := Level1{}
 		for l1Field := iter.ReadObject(); l1Field != ""; l1Field = iter.ReadObject() {
 			switch l1Field {
@@ -302,7 +301,7 @@ func Benchmark_jsoniter_nested(b *testing.B) {
 	}
 }
 
-func readLevel1Hello(iter *jsoniter.Iterator) []Level2 {
+func readLevel1Hello(iter *gosafejson.Iterator) []Level2 {
 	l2Array := make([]Level2, 0, 2)
 	for iter.ReadArray() {
 		l2 := Level2{}
@@ -320,8 +319,12 @@ func readLevel1Hello(iter *jsoniter.Iterator) []Level2 {
 }
 
 func Benchmark_json_nested(b *testing.B) {
+	var err error
 	for n := 0; n < b.N; n++ {
 		l1 := Level1{}
-		json.Unmarshal([]byte(`{"hello": [{"world": "value1"}, {"world": "value2"}]}`), &l1)
+		err = json.Unmarshal([]byte(`{"hello": [{"world": "value1"}, {"world": "value2"}]}`), &l1)
+	}
+	if err != nil {
+		b.Error(err)
 	}
 }

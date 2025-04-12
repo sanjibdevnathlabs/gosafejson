@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/json-iterator/go"
+	"github.com/sanjibdevnathlabs/gosafejson"
 	"github.com/stretchr/testify/require"
 )
 
 func Test_use_number_for_unmarshal(t *testing.T) {
 	should := require.New(t)
-	api := jsoniter.Config{UseNumber: true}.Froze()
+	api := gosafejson.Config{UseNumber: true}.Froze()
 	var obj interface{}
 	should.Nil(api.UnmarshalFromString("123", &obj))
 	should.Equal(json.Number("123"), obj)
@@ -18,7 +18,7 @@ func Test_use_number_for_unmarshal(t *testing.T) {
 
 func Test_customize_float_marshal(t *testing.T) {
 	should := require.New(t)
-	json := jsoniter.Config{MarshalFloatWith6Digits: true}.Froze()
+	json := gosafejson.Config{MarshalFloatWith6Digits: true}.Froze()
 	str, err := json.MarshalToString(float32(1.23456789))
 	should.Nil(err)
 	should.Equal("1.234568", str)
@@ -31,7 +31,7 @@ func Test_customize_tag_key(t *testing.T) {
 	}
 
 	should := require.New(t)
-	json := jsoniter.Config{TagKey: "orm"}.Froze()
+	json := gosafejson.Config{TagKey: "orm"}.Froze()
 	str, err := json.MarshalToString(TestObject{"hello"})
 	should.Nil(err)
 	should.Equal(`{"field":"hello"}`, str)
@@ -40,9 +40,9 @@ func Test_customize_tag_key(t *testing.T) {
 func Test_read_large_number_as_interface(t *testing.T) {
 	should := require.New(t)
 	var val interface{}
-	err := jsoniter.Config{UseNumber: true}.Froze().UnmarshalFromString(`123456789123456789123456789`, &val)
+	err := gosafejson.Config{UseNumber: true}.Froze().UnmarshalFromString(`123456789123456789123456789`, &val)
 	should.Nil(err)
-	output, err := jsoniter.MarshalToString(val)
+	output, err := gosafejson.MarshalToString(val)
 	should.Nil(err)
 	should.Equal(`123456789123456789123456789`, output)
 }
@@ -114,10 +114,10 @@ func Test_CaseSensitive(t *testing.T) {
 
 	for _, tc := range testCases {
 		val := caseSensitiveStruct{}
-		err := jsoniter.Config{CaseSensitive: tc.caseSensitive}.Froze().UnmarshalFromString(tc.input, &val)
+		err := gosafejson.Config{CaseSensitive: tc.caseSensitive}.Froze().UnmarshalFromString(tc.input, &val)
 		should.Nil(err)
 
-		output, err := jsoniter.MarshalToString(val)
+		output, err := gosafejson.MarshalToString(val)
 		should.Nil(err)
 		should.Equal(tc.expectedOutput, output)
 	}
@@ -164,10 +164,10 @@ func Test_CaseSensitive_MoreThanTenFields(t *testing.T) {
 
 	for _, tc := range testCases {
 		val := structWithElevenFields{}
-		err := jsoniter.Config{CaseSensitive: tc.caseSensitive}.Froze().UnmarshalFromString(tc.input, &val)
+		err := gosafejson.Config{CaseSensitive: tc.caseSensitive}.Froze().UnmarshalFromString(tc.input, &val)
 		should.Nil(err)
 
-		output, err := jsoniter.MarshalToString(val)
+		output, err := gosafejson.MarshalToString(val)
 		should.Nil(err)
 		should.Equal(tc.expectedOutput, output)
 	}
@@ -208,11 +208,11 @@ func Test_OnlyTaggedField(t *testing.T) {
 		I:      &I{J: "j", K: "k"},
 	}
 
-	output, err := jsoniter.Config{OnlyTaggedField: true}.Froze().Marshal(obj)
+	output, err := gosafejson.Config{OnlyTaggedField: true}.Froze().Marshal(obj)
 	should.Nil(err)
 
 	m := make(map[string]interface{})
-	err = jsoniter.Unmarshal(output, &m)
+	err = gosafejson.Unmarshal(output, &m)
 	should.Nil(err)
 
 	should.Equal(map[string]interface{}{

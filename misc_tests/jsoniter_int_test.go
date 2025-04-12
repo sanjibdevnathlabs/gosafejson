@@ -1,3 +1,4 @@
+//go:build go1.8
 // +build go1.8
 
 package misc_tests
@@ -6,18 +7,17 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"math/rand"
 	"strconv"
 	"testing"
 
-	"github.com/json-iterator/go"
+	"github.com/sanjibdevnathlabs/gosafejson"
 	"github.com/stretchr/testify/require"
 )
 
 func Test_read_uint64_invalid(t *testing.T) {
 	should := require.New(t)
-	iter := jsoniter.ParseString(jsoniter.ConfigDefault, ",")
+	iter := gosafejson.ParseString(gosafejson.ConfigDefault, ",")
 	iter.ReadUint64()
 	should.NotNil(iter.Error)
 }
@@ -26,7 +26,8 @@ func Test_read_int32_array(t *testing.T) {
 	should := require.New(t)
 	input := `[123,456,789]`
 	val := make([]int32, 0)
-	jsoniter.UnmarshalFromString(input, &val)
+	err := gosafejson.UnmarshalFromString(input, &val)
+	should.Nil(err)
 	should.Equal(3, len(val))
 }
 
@@ -34,13 +35,14 @@ func Test_read_int64_array(t *testing.T) {
 	should := require.New(t)
 	input := `[123,456,789]`
 	val := make([]int64, 0)
-	jsoniter.UnmarshalFromString(input, &val)
+	err := gosafejson.UnmarshalFromString(input, &val)
+	should.Nil(err)
 	should.Equal(3, len(val))
 }
 
 func Test_wrap_int(t *testing.T) {
 	should := require.New(t)
-	str, err := jsoniter.MarshalToString(jsoniter.WrapInt64(100))
+	str, err := gosafejson.MarshalToString(gosafejson.WrapInt64(100))
 	should.Nil(err)
 	should.Equal("100", str)
 }
@@ -48,7 +50,7 @@ func Test_wrap_int(t *testing.T) {
 func Test_write_val_int(t *testing.T) {
 	should := require.New(t)
 	buf := &bytes.Buffer{}
-	stream := jsoniter.NewStream(jsoniter.ConfigDefault, buf, 4096)
+	stream := gosafejson.NewStream(gosafejson.ConfigDefault, buf, 4096)
 	stream.WriteVal(1001)
 	stream.Flush()
 	should.Nil(stream.Error)
@@ -58,7 +60,7 @@ func Test_write_val_int(t *testing.T) {
 func Test_write_val_int_ptr(t *testing.T) {
 	should := require.New(t)
 	buf := &bytes.Buffer{}
-	stream := jsoniter.NewStream(jsoniter.ConfigDefault, buf, 4096)
+	stream := gosafejson.NewStream(gosafejson.ConfigDefault, buf, 4096)
 	val := 1001
 	stream.WriteVal(&val)
 	stream.Flush()
@@ -69,7 +71,7 @@ func Test_write_val_int_ptr(t *testing.T) {
 func Test_float_as_int(t *testing.T) {
 	should := require.New(t)
 	var i int
-	should.NotNil(jsoniter.Unmarshal([]byte(`1.1`), &i))
+	should.NotNil(gosafejson.Unmarshal([]byte(`1.1`), &i))
 }
 
 // chunkedData is io.Reader which returns random amount of data in range [1, chunkedData.chunkSize].
@@ -111,7 +113,7 @@ func TestIterator_ReadInt_chunkedInput(t *testing.T) {
 	for data.chunkSize = 3; data.chunkSize <= len(data.data); data.chunkSize++ {
 		data.head = 0
 
-		iter := jsoniter.Parse(jsoniter.ConfigDefault, data, data.chunkSize)
+		iter := gosafejson.Parse(gosafejson.ConfigDefault, data, data.chunkSize)
 		i := 0
 		for iter.ReadArray() {
 			// every even item is float, let's just skip it.
@@ -130,23 +132,25 @@ func TestIterator_ReadInt_chunkedInput(t *testing.T) {
 }
 
 // jsonFloatIntArray generates JSON array where every
-//  - even item is float 0.1
-//  - odd item is integer 0
 //
-//  [0.1, 0, 0.1, 0]
+//   - even item is float 0.1
+//
+//   - odd item is integer 0
+//
+//     [0.1, 0, 0.1, 0]
 func jsonFloatIntArray(t *testing.T, numberOfItems int) []byte {
 	t.Helper()
-	numbers := make([]jsoniter.Any, numberOfItems)
+	numbers := make([]gosafejson.Any, numberOfItems)
 	for i := range numbers {
 		switch i % 2 {
 		case 0:
-			numbers[i] = jsoniter.WrapFloat64(0.1)
+			numbers[i] = gosafejson.WrapFloat64(0.1)
 		default:
-			numbers[i] = jsoniter.WrapInt64(0)
+			numbers[i] = gosafejson.WrapInt64(0)
 		}
 	}
 
-	fixture, err := jsoniter.ConfigFastest.Marshal(numbers)
+	fixture, err := gosafejson.ConfigFastest.Marshal(numbers)
 	if err != nil {
 		panic(err)
 	}
@@ -162,7 +166,7 @@ func jsonFloatIntArray(t *testing.T, numberOfItems int) []byte {
 }
 
 func Benchmark_jsoniter_encode_int(b *testing.B) {
-	stream := jsoniter.NewStream(jsoniter.ConfigDefault, ioutil.Discard, 64)
+	stream := gosafejson.NewStream(gosafejson.ConfigDefault, io.Discard, 64)
 	for n := 0; n < b.N; n++ {
 		stream.Reset(nil)
 		stream.WriteUint64(0xffffffff)
@@ -176,7 +180,7 @@ func Benchmark_itoa(b *testing.B) {
 }
 
 func Benchmark_jsoniter_int(b *testing.B) {
-	iter := jsoniter.NewIterator(jsoniter.ConfigDefault)
+	iter := gosafejson.NewIterator(gosafejson.ConfigDefault)
 	input := []byte(`100`)
 	for n := 0; n < b.N; n++ {
 		iter.ResetBytes(input)
@@ -185,8 +189,12 @@ func Benchmark_jsoniter_int(b *testing.B) {
 }
 
 func Benchmark_json_int(b *testing.B) {
+	var err error
 	for n := 0; n < b.N; n++ {
 		result := int64(0)
-		json.Unmarshal([]byte(`-100`), &result)
+		err = json.Unmarshal([]byte(`-100`), &result)
+	}
+	if err != nil {
+		b.Error(err)
 	}
 }

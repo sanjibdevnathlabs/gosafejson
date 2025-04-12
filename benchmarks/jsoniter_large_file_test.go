@@ -2,10 +2,11 @@ package test
 
 import (
 	"encoding/json"
-	"github.com/json-iterator/go"
-	"io/ioutil"
+	"io"
 	"os"
 	"testing"
+
+	"github.com/sanjibdevnathlabs/gosafejson"
 )
 
 //func Test_large_file(t *testing.T) {
@@ -25,7 +26,7 @@ import (
 //}
 
 func init() {
-	ioutil.WriteFile("/tmp/large-file.json", []byte(`[{
+	err := os.WriteFile("/tmp/large-file.json", []byte(`[{
   "person": {
     "id": "d50887ca-a6ce-4e59-b89f-14f0b5d03b03",
     "name": {
@@ -118,6 +119,9 @@ func init() {
   },
   "company": "hello"
 }]`), 0666)
+	if err != nil {
+		panic("failed to write benchmark file: " + err.Error())
+	}
 }
 
 /*
@@ -127,16 +131,21 @@ func init() {
 func Benchmark_jsoniter_large_file(b *testing.B) {
 	b.ReportAllocs()
 	for n := 0; n < b.N; n++ {
-		file, _ := os.Open("/tmp/large-file.json")
-		iter := jsoniter.Parse(jsoniter.ConfigDefault, file, 4096)
+		file, err := os.Open("/tmp/large-file.json")
+		if err != nil {
+			b.Fatal(err)
+		}
+		iter := gosafejson.Parse(gosafejson.ConfigDefault, file, 4096)
 		count := 0
-		iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
+		iter.ReadArrayCB(func(iter *gosafejson.Iterator) bool {
 			// Skip() is strict by default, use --tags jsoniter-sloppy to skip without validation
 			iter.Skip()
 			count++
 			return true
 		})
-		file.Close()
+		if err := file.Close(); err != nil {
+			b.Error(err)
+		}
 		if iter.Error != nil {
 			b.Error(iter.Error)
 		}
@@ -146,11 +155,19 @@ func Benchmark_jsoniter_large_file(b *testing.B) {
 func Benchmark_json_large_file(b *testing.B) {
 	b.ReportAllocs()
 	for n := 0; n < b.N; n++ {
-		file, _ := os.Open("/tmp/large-file.json")
-		bytes, _ := ioutil.ReadAll(file)
-		file.Close()
+		file, err := os.Open("/tmp/large-file.json")
+		if err != nil {
+			b.Fatal(err)
+		}
+		bytes, err := io.ReadAll(file)
+		if err != nil {
+			b.Error(err)
+		}
+		if err := file.Close(); err != nil {
+			b.Error(err)
+		}
 		result := []struct{}{}
-		err := json.Unmarshal(bytes, &result)
+		err = json.Unmarshal(bytes, &result)
 		if err != nil {
 			b.Error(err)
 		}

@@ -1,4 +1,4 @@
-package jsoniter
+package gosafejson
 
 var digits []uint32
 
@@ -16,9 +16,10 @@ func init() {
 
 func writeFirstBuf(space []byte, v uint32) []byte {
 	start := v >> 24
-	if start == 0 {
+	switch start {
+	case 0:
 		space = append(space, byte(v>>16), byte(v>>8))
-	} else if start == 1 {
+	case 1:
 		space = append(space, byte(v>>8))
 	}
 	space = append(space, byte(v))
@@ -56,7 +57,6 @@ func (stream *Stream) WriteUint16(val uint16) {
 	r1 := val - q1*1000
 	stream.buf = writeFirstBuf(stream.buf, digits[q1])
 	stream.buf = writeBuf(stream.buf, digits[r1])
-	return
 }
 
 // WriteInt16 write int16 to stream

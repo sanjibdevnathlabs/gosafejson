@@ -3,11 +3,12 @@ package test
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/json-iterator/go"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"io"
 	"testing"
+
+	"github.com/sanjibdevnathlabs/gosafejson"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_missing_object_end(t *testing.T) {
@@ -17,18 +18,18 @@ func Test_missing_object_end(t *testing.T) {
 		Tags   map[string]interface{} `json:"tags"`
 	}
 	obj := TestObject{}
-	should.NotNil(jsoniter.UnmarshalFromString(`{"metric": "sys.777","tags": {"a":"123"}`, &obj))
+	should.NotNil(gosafejson.UnmarshalFromString(`{"metric": "sys.777","tags": {"a":"123"}`, &obj))
 }
 
 func Test_missing_array_end(t *testing.T) {
 	should := require.New(t)
-	should.NotNil(jsoniter.UnmarshalFromString(`[1,2,3`, &[]int{}))
+	should.NotNil(gosafejson.UnmarshalFromString(`[1,2,3`, &[]int{}))
 }
 
 func Test_invalid_any(t *testing.T) {
 	should := require.New(t)
-	any := jsoniter.Get([]byte("[]"))
-	should.Equal(jsoniter.InvalidValue, any.Get(0.3).ValueType())
+	any := gosafejson.Get([]byte("[]"))
+	should.Equal(gosafejson.InvalidValue, any.Get(0.3).ValueType())
 	// is nil correct ?
 	should.Equal(nil, any.Get(0.3).GetInterface())
 
@@ -44,7 +45,7 @@ func Test_invalid_any(t *testing.T) {
 	should.Equal(float64(0), any.ToFloat64())
 	should.Equal("", any.ToString())
 
-	should.Equal(jsoniter.InvalidValue, any.Get(0.1).Get(1).ValueType())
+	should.Equal(gosafejson.InvalidValue, any.Get(0.1).Get(1).ValueType())
 }
 
 func Test_invalid_struct_input(t *testing.T) {
@@ -52,23 +53,23 @@ func Test_invalid_struct_input(t *testing.T) {
 	type TestObject struct{}
 	input := []byte{54, 141, 30}
 	obj := TestObject{}
-	should.NotNil(jsoniter.Unmarshal(input, &obj))
+	should.NotNil(gosafejson.Unmarshal(input, &obj))
 }
 
 func Test_invalid_slice_input(t *testing.T) {
 	should := require.New(t)
-	type TestObject struct{}
+	// type TestObject struct{}
 	input := []byte{93}
 	obj := []string{}
-	should.NotNil(jsoniter.Unmarshal(input, &obj))
+	should.NotNil(gosafejson.Unmarshal(input, &obj))
 }
 
 func Test_invalid_array_input(t *testing.T) {
 	should := require.New(t)
-	type TestObject struct{}
+	// type TestObject struct{}
 	input := []byte{93}
 	obj := [0]string{}
-	should.NotNil(jsoniter.Unmarshal(input, &obj))
+	should.NotNil(gosafejson.Unmarshal(input, &obj))
 }
 
 func Test_invalid_float(t *testing.T) {
@@ -84,17 +85,17 @@ func Test_invalid_float(t *testing.T) {
 	for _, input := range inputs {
 		t.Run(input, func(t *testing.T) {
 			should := require.New(t)
-			iter := jsoniter.ParseString(jsoniter.ConfigDefault, input+",")
+			iter := gosafejson.ParseString(gosafejson.ConfigDefault, input+",")
 			iter.Skip()
 			should.NotEqual(io.EOF, iter.Error)
 			should.NotNil(iter.Error)
 			v := float64(0)
 			should.NotNil(json.Unmarshal([]byte(input), &v))
-			iter = jsoniter.ParseString(jsoniter.ConfigDefault, input+",")
+			iter = gosafejson.ParseString(gosafejson.ConfigDefault, input+",")
 			iter.ReadFloat64()
 			should.NotEqual(io.EOF, iter.Error)
 			should.NotNil(iter.Error)
-			iter = jsoniter.ParseString(jsoniter.ConfigDefault, input+",")
+			iter = gosafejson.ParseString(gosafejson.ConfigDefault, input+",")
 			iter.ReadFloat32()
 			should.NotEqual(io.EOF, iter.Error)
 			should.NotNil(iter.Error)
@@ -112,14 +113,14 @@ func Test_chan(t *testing.T) {
 
 	t.Run("Encode channel", func(t *testing.T) {
 		should := require.New(t)
-		str, err := jsoniter.Marshal(obj)
+		str, err := gosafejson.Marshal(obj)
 		should.NotNil(err)
 		should.Nil(str)
 	})
 
 	t.Run("Encode channel using compatible configuration", func(t *testing.T) {
 		should := require.New(t)
-		str, err := jsoniter.ConfigCompatibleWithStandardLibrary.Marshal(obj)
+		str, err := gosafejson.ConfigCompatibleWithStandardLibrary.Marshal(obj)
 		should.NotNil(err)
 		should.Nil(str)
 	})
@@ -130,14 +131,14 @@ func Test_invalid_in_map(t *testing.T) {
 
 	t.Run("Encode map with invalid content", func(t *testing.T) {
 		should := require.New(t)
-		str, err := jsoniter.Marshal(testMap)
+		str, err := gosafejson.Marshal(testMap)
 		should.NotNil(err)
 		should.Nil(str)
 	})
 
 	t.Run("Encode map with invalid content using compatible configuration", func(t *testing.T) {
 		should := require.New(t)
-		str, err := jsoniter.ConfigCompatibleWithStandardLibrary.Marshal(testMap)
+		str, err := gosafejson.ConfigCompatibleWithStandardLibrary.Marshal(testMap)
 		should.NotNil(err)
 		should.Nil(str)
 	})
@@ -148,10 +149,10 @@ func Test_invalid_number(t *testing.T) {
 		Number int `json:"number"`
 	}
 	obj := Message{}
-	decoder := jsoniter.ConfigCompatibleWithStandardLibrary.NewDecoder(bytes.NewBufferString(`{"number":"5"}`))
+	decoder := gosafejson.ConfigCompatibleWithStandardLibrary.NewDecoder(bytes.NewBufferString(`{"number":"5"}`))
 	err := decoder.Decode(&obj)
 	invalidStr := err.Error()
-	result, err := jsoniter.ConfigCompatibleWithStandardLibrary.Marshal(invalidStr)
+	result, err := gosafejson.ConfigCompatibleWithStandardLibrary.Marshal(invalidStr)
 	should := require.New(t)
 	should.Nil(err)
 	result2, err := json.Marshal(invalidStr)
@@ -161,8 +162,8 @@ func Test_invalid_number(t *testing.T) {
 
 func Test_valid(t *testing.T) {
 	should := require.New(t)
-	should.True(jsoniter.Valid([]byte(`{}`)))
-	should.False(jsoniter.Valid([]byte(`{`)))
+	should.True(gosafejson.Valid([]byte(`{}`)))
+	should.False(gosafejson.Valid([]byte(`{`)))
 }
 
 func Test_nil_pointer(t *testing.T) {
@@ -172,7 +173,7 @@ func Test_nil_pointer(t *testing.T) {
 		X int
 	}
 	var obj *T
-	err := jsoniter.Unmarshal(data, obj)
+	err := gosafejson.Unmarshal(data, obj)
 	should.NotNil(err)
 }
 
@@ -185,58 +186,61 @@ func Test_func_pointer_type(t *testing.T) {
 	}
 	t.Run("encode null is valid", func(t *testing.T) {
 		should := require.New(t)
+		//nolint:staticcheck
 		output, err := json.Marshal(TestObject1{})
 		should.Nil(err)
 		should.Equal(`{"Obj":null}`, string(output))
-		output, err = jsoniter.Marshal(TestObject1{})
+		output, err = gosafejson.Marshal(TestObject1{})
 		should.Nil(err)
 		should.Equal(`{"Obj":null}`, string(output))
 	})
 	t.Run("encode not null is invalid", func(t *testing.T) {
 		should := require.New(t)
+		//nolint:staticcheck
 		_, err := json.Marshal(TestObject1{Obj: &TestObject2{}})
 		should.NotNil(err)
-		_, err = jsoniter.Marshal(TestObject1{Obj: &TestObject2{}})
+		//nolint:staticcheck
+		_, err = gosafejson.Marshal(TestObject1{Obj: &TestObject2{}})
 		should.NotNil(err)
 	})
 	t.Run("decode null is valid", func(t *testing.T) {
 		should := require.New(t)
 		var obj TestObject1
 		should.Nil(json.Unmarshal([]byte(`{"Obj":{"F": null}}`), &obj))
-		should.Nil(jsoniter.Unmarshal([]byte(`{"Obj":{"F": null}}`), &obj))
+		should.Nil(gosafejson.Unmarshal([]byte(`{"Obj":{"F": null}}`), &obj))
 	})
 	t.Run("decode not null is invalid", func(t *testing.T) {
 		should := require.New(t)
 		var obj TestObject1
 		should.NotNil(json.Unmarshal([]byte(`{"Obj":{"F": "hello"}}`), &obj))
-		should.NotNil(jsoniter.Unmarshal([]byte(`{"Obj":{"F": "hello"}}`), &obj))
+		should.NotNil(gosafejson.Unmarshal([]byte(`{"Obj":{"F": "hello"}}`), &obj))
 	})
 }
 
 func TestEOF(t *testing.T) {
 	var s string
-	err := jsoniter.ConfigCompatibleWithStandardLibrary.NewDecoder(&bytes.Buffer{}).Decode(&s)
+	err := gosafejson.ConfigCompatibleWithStandardLibrary.NewDecoder(&bytes.Buffer{}).Decode(&s)
 	assert.Equal(t, io.EOF, err)
 }
 
 func TestDecodeErrorType(t *testing.T) {
 	should := require.New(t)
 	var err error
-	should.Nil(jsoniter.Unmarshal([]byte("null"), &err))
-	should.NotNil(jsoniter.Unmarshal([]byte("123"), &err))
+	should.Nil(gosafejson.Unmarshal([]byte("null"), &err))
+	should.NotNil(gosafejson.Unmarshal([]byte("123"), &err))
 }
 
 func Test_decode_slash(t *testing.T) {
 	should := require.New(t)
 	var obj interface{}
 	should.NotNil(json.Unmarshal([]byte("\\"), &obj))
-	should.NotNil(jsoniter.UnmarshalFromString("\\", &obj))
+	should.NotNil(gosafejson.UnmarshalFromString("\\", &obj))
 }
 
 func Test_NilInput(t *testing.T) {
 	var jb []byte // nil
 	var out string
-	err := jsoniter.Unmarshal(jb, &out)
+	err := gosafejson.Unmarshal(jb, &out)
 	if err == nil {
 		t.Errorf("Expected error")
 	}
@@ -245,18 +249,18 @@ func Test_NilInput(t *testing.T) {
 func Test_EmptyInput(t *testing.T) {
 	jb := []byte("")
 	var out string
-	err := jsoniter.Unmarshal(jb, &out)
+	err := gosafejson.Unmarshal(jb, &out)
 	if err == nil {
 		t.Errorf("Expected error")
 	}
 }
 
 type Foo struct {
-	A jsoniter.Any
+	A gosafejson.Any
 }
 
 func Test_nil_any(t *testing.T) {
 	should := require.New(t)
-	data, _ := jsoniter.Marshal(&Foo{})
+	data, _ := gosafejson.Marshal(&Foo{})
 	should.Equal(`{"A":null}`, string(data))
 }

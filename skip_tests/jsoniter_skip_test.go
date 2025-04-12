@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/json-iterator/go"
+	"github.com/sanjibdevnathlabs/gosafejson"
 	"github.com/stretchr/testify/require"
 )
 
 func Test_skip_number_in_array(t *testing.T) {
 	should := require.New(t)
-	iter := jsoniter.ParseString(jsoniter.ConfigDefault, `[-0.12, "stream"]`)
+	iter := gosafejson.ParseString(gosafejson.ConfigDefault, `[-0.12, "stream"]`)
 	iter.ReadArray()
 	iter.Skip()
 	iter.ReadArray()
@@ -21,7 +21,7 @@ func Test_skip_number_in_array(t *testing.T) {
 
 func Test_skip_string_in_array(t *testing.T) {
 	should := require.New(t)
-	iter := jsoniter.ParseString(jsoniter.ConfigDefault, `["hello", "stream"]`)
+	iter := gosafejson.ParseString(gosafejson.ConfigDefault, `["hello", "stream"]`)
 	iter.ReadArray()
 	iter.Skip()
 	iter.ReadArray()
@@ -30,7 +30,7 @@ func Test_skip_string_in_array(t *testing.T) {
 }
 
 func Test_skip_null(t *testing.T) {
-	iter := jsoniter.ParseString(jsoniter.ConfigDefault, `[null , "stream"]`)
+	iter := gosafejson.ParseString(gosafejson.ConfigDefault, `[null , "stream"]`)
 	iter.ReadArray()
 	iter.Skip()
 	iter.ReadArray()
@@ -40,7 +40,7 @@ func Test_skip_null(t *testing.T) {
 }
 
 func Test_skip_true(t *testing.T) {
-	iter := jsoniter.ParseString(jsoniter.ConfigDefault, `[true , "stream"]`)
+	iter := gosafejson.ParseString(gosafejson.ConfigDefault, `[true , "stream"]`)
 	iter.ReadArray()
 	iter.Skip()
 	iter.ReadArray()
@@ -50,7 +50,7 @@ func Test_skip_true(t *testing.T) {
 }
 
 func Test_skip_false(t *testing.T) {
-	iter := jsoniter.ParseString(jsoniter.ConfigDefault, `[false , "stream"]`)
+	iter := gosafejson.ParseString(gosafejson.ConfigDefault, `[false , "stream"]`)
 	iter.ReadArray()
 	iter.Skip()
 	iter.ReadArray()
@@ -60,7 +60,7 @@ func Test_skip_false(t *testing.T) {
 }
 
 func Test_skip_array(t *testing.T) {
-	iter := jsoniter.ParseString(jsoniter.ConfigDefault, `[[1, [2, [3], 4]], "stream"]`)
+	iter := gosafejson.ParseString(gosafejson.ConfigDefault, `[[1, [2, [3], 4]], "stream"]`)
 	iter.ReadArray()
 	iter.Skip()
 	iter.ReadArray()
@@ -70,7 +70,7 @@ func Test_skip_array(t *testing.T) {
 }
 
 func Test_skip_empty_array(t *testing.T) {
-	iter := jsoniter.ParseString(jsoniter.ConfigDefault, `[ [ ], "stream"]`)
+	iter := gosafejson.ParseString(gosafejson.ConfigDefault, `[ [ ], "stream"]`)
 	iter.ReadArray()
 	iter.Skip()
 	iter.ReadArray()
@@ -80,7 +80,7 @@ func Test_skip_empty_array(t *testing.T) {
 }
 
 func Test_skip_nested(t *testing.T) {
-	iter := jsoniter.ParseString(jsoniter.ConfigDefault, `[ {"a" : [{"stream": "c"}], "d": 102 }, "stream"]`)
+	iter := gosafejson.ParseString(gosafejson.ConfigDefault, `[ {"a" : [{"stream": "c"}], "d": 102 }, "stream"]`)
 	iter.ReadArray()
 	iter.Skip()
 	iter.ReadArray()
@@ -91,7 +91,7 @@ func Test_skip_nested(t *testing.T) {
 
 func Test_skip_and_return_bytes(t *testing.T) {
 	should := require.New(t)
-	iter := jsoniter.ParseString(jsoniter.ConfigDefault, `[ {"a" : [{"stream": "c"}], "d": 102 }, "stream"]`)
+	iter := gosafejson.ParseString(gosafejson.ConfigDefault, `[ {"a" : [{"stream": "c"}], "d": 102 }, "stream"]`)
 	iter.ReadArray()
 	skipped := iter.SkipAndReturnBytes()
 	should.Equal(`{"a" : [{"stream": "c"}], "d": 102 }`, string(skipped))
@@ -99,7 +99,7 @@ func Test_skip_and_return_bytes(t *testing.T) {
 
 func Test_skip_and_return_bytes_with_reader(t *testing.T) {
 	should := require.New(t)
-	iter := jsoniter.Parse(jsoniter.ConfigDefault, bytes.NewBufferString(`[ {"a" : [{"stream": "c"}], "d": 102 }, "stream"]`), 4)
+	iter := gosafejson.Parse(gosafejson.ConfigDefault, bytes.NewBufferString(`[ {"a" : [{"stream": "c"}], "d": 102 }, "stream"]`), 4)
 	iter.ReadArray()
 	skipped := iter.SkipAndReturnBytes()
 	should.Equal(`{"a" : [{"stream": "c"}], "d": 102 }`, string(skipped))
@@ -107,7 +107,7 @@ func Test_skip_and_return_bytes_with_reader(t *testing.T) {
 
 func Test_append_skip_and_return_bytes_with_reader(t *testing.T) {
 	should := require.New(t)
-	iter := jsoniter.Parse(jsoniter.ConfigDefault, bytes.NewBufferString(`[ {"a" : [{"stream": "c"}], "d": 102 }, "stream"]`), 4)
+	iter := gosafejson.Parse(gosafejson.ConfigDefault, bytes.NewBufferString(`[ {"a" : [{"stream": "c"}], "d": 102 }, "stream"]`), 4)
 	iter.ReadArray()
 	buf := make([]byte, 0, 1024)
 	buf = iter.SkipAndAppendBytes(buf)
@@ -116,7 +116,7 @@ func Test_append_skip_and_return_bytes_with_reader(t *testing.T) {
 
 func Test_skip_empty(t *testing.T) {
 	should := require.New(t)
-	should.NotNil(jsoniter.Get([]byte("")).LastError())
+	should.NotNil(gosafejson.Get([]byte("")).LastError())
 }
 
 type TestResp struct {
@@ -150,7 +150,7 @@ func Benchmark_jsoniter_skip(b *testing.B) {
 }`)
 	for n := 0; n < b.N; n++ {
 		result := TestResp{}
-		iter := jsoniter.ParseBytes(jsoniter.ConfigDefault, input)
+		iter := gosafejson.ParseBytes(gosafejson.ConfigDefault, input)
 		for field := iter.ReadObject(); field != ""; field = iter.ReadObject() {
 			switch field {
 			case "code":
@@ -187,8 +187,12 @@ func Benchmark_json_skip(b *testing.B) {
     },
     "code": 200
 }`)
+	var err error
 	for n := 0; n < b.N; n++ {
 		result := TestResp{}
-		json.Unmarshal(input, &result)
+		err = json.Unmarshal(input, &result)
+	}
+	if err != nil {
+		b.Error(err)
 	}
 }

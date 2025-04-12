@@ -1,22 +1,22 @@
 package extra
 
 import (
-	"github.com/json-iterator/go"
+	"github.com/sanjibdevnathlabs/gosafejson"
 	"strings"
 	"unicode"
 )
 
 // SetNamingStrategy rename struct fields uniformly
 func SetNamingStrategy(translate func(string) string) {
-	jsoniter.RegisterExtension(&namingStrategyExtension{jsoniter.DummyExtension{}, translate})
+	gosafejson.RegisterExtension(&namingStrategyExtension{gosafejson.DummyExtension{}, translate})
 }
 
 type namingStrategyExtension struct {
-	jsoniter.DummyExtension
+	gosafejson.DummyExtension
 	translate func(string) string
 }
 
-func (extension *namingStrategyExtension) UpdateStructDescriptor(structDescriptor *jsoniter.StructDescriptor) {
+func (extension *namingStrategyExtension) UpdateStructDescriptor(structDescriptor *gosafejson.StructDescriptor) {
 	for _, binding := range structDescriptor.Fields {
 		if unicode.IsLower(rune(binding.Field.Name()[0])) || binding.Field.Name()[0] == '_'{
 			continue
