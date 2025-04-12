@@ -2,3 +2,7 @@
 /bug_test.go
 /coverage.txt
 /.idea
+.vscode
+.cursorrules
+.cursorignore
+.instructions.md

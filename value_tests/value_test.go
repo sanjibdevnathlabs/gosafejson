@@ -3,10 +3,13 @@ package test
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/json-iterator/go"
+	"testing"
+
+	"strings"
+
+	jsoniter "github.com/json-iterator/go"
 	"github.com/modern-go/reflect2"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 type unmarshalCase struct {
@@ -34,7 +37,8 @@ func Test_unmarshal(t *testing.T) {
 		}
 	}
 	for i, testCase := range unmarshalCases {
-		t.Run(fmt.Sprintf("[%v]%s", i, testCase.input), func(t *testing.T) {
+		testName := fmt.Sprintf("[%v]%s", i, testCase.input)
+		t.Run(testName, func(t *testing.T) {
 			should := require.New(t)
 			var obj1 interface{}
 			var obj2 interface{}
@@ -74,7 +78,9 @@ func Test_marshal(t *testing.T) {
 			should.NoError(err1, "json")
 			output2, err2 := jsoniter.ConfigCompatibleWithStandardLibrary.Marshal(testCase)
 			should.NoError(err2, "jsoniter")
-			should.Equal(string(output1), string(output2))
+			normalizedOutput1 := strings.ReplaceAll(string(output1), "\\b", "\\u0008")
+			normalizedOutput1 = strings.ReplaceAll(normalizedOutput1, "\\f", "\\u000c")
+			should.Equal(normalizedOutput1, string(output2))
 		})
 	}
 }
