@@ -37,6 +37,20 @@ jobs:
       - name: Test
         run: make test
 
+      - name: Calculate code coverage
+        if: github.event_name == 'pull_request' # Only run on PRs
+        run: |
+          COVERAGE=$(go tool cover -func=coverage.out | grep total: | awk '{print $3}')
+          echo "COVERAGE=$COVERAGE" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Post coverage comment
+        if: github.event_name == 'pull_request' # Only run on PRs
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          message: "📊 Code Coverage: ${{ env.COVERAGE }}"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4.0.1
         with:
@@ -75,6 +89,10 @@ jobs:
           fail-on-error: true
           # Add comment to PR
           comment-on-alert: true
+          # Always add comment to PR
+          comment-always: true
+          # Always add summary to job summary
+          summary-always: true
           # Fail workflow if benchmark regresses
           alert-threshold: '200%' # Fail if 2x slower
           alert-comment-cc-users: '@sanjibdevnathlabs' # Optional: CC users on alert comment
