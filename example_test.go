@@ -62,7 +62,7 @@ func ExampleConfigFastest_Marshal() {
 	if stream.Error != nil {
 		fmt.Println("error:", stream.Error)
 	}
-	os.Stdout.Write(stream.Buffer())
+	_, _ = os.Stdout.Write(stream.Buffer())
 	// Output:
 	// {"ID":1,"Name":"Reds","Colors":["Crimson","Red","Ruby","Maroon"]}
 }
@@ -97,10 +97,18 @@ func ExampleGet() {
 
 func ExampleMyKey() {
 	hello := MyKey("hello")
-	output, _ := Marshal(map[*MyKey]string{&hello: "world"})
+	output, err := Marshal(map[*MyKey]string{&hello: "world"})
+	if err != nil {
+		fmt.Println("marshal error:", err)
+		return
+	}
 	fmt.Println(string(output))
 	obj := map[*MyKey]string{}
-	Unmarshal(output, &obj)
+	err = Unmarshal(output, &obj)
+	if err != nil {
+		fmt.Println("unmarshal error:", err)
+		return
+	}
 	for k, v := range obj {
 		fmt.Println(*k, v)
 	}
@@ -112,7 +120,7 @@ func ExampleMyKey() {
 type MyKey string
 
 func (m *MyKey) MarshalText() ([]byte, error) {
-	return []byte(strings.Replace(string(*m), "h", "H", -1)), nil
+	return []byte(strings.ReplaceAll(string(*m), "h", "H")), nil
 }
 
 func (m *MyKey) UnmarshalText(text []byte) error {

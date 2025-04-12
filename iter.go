@@ -153,6 +153,7 @@ func (iter *Iterator) WhatIsNext() ValueType {
 	return valueType
 }
 
+//nolint:unused
 func (iter *Iterator) skipWhitespacesWithoutLoadMore() bool {
 	for i := iter.head; i < iter.tail; i++ {
 		c := iter.buf[i]
@@ -284,7 +285,6 @@ func (iter *Iterator) unreadByte() {
 		return
 	}
 	iter.head--
-	return
 }
 
 // Read read the next JSON element as generic interface{}.

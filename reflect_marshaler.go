@@ -105,7 +105,7 @@ func (encoder *marshalerEncoder) Encode(ptr unsafe.Pointer, stream *Stream) {
 		if l > 0 && bytes[l-1] == '\n' {
 			bytes = bytes[:l-1]
 		}
-		stream.Write(bytes)
+		_, _ = stream.Write(bytes)
 	}
 }
 
@@ -127,7 +127,7 @@ func (encoder *directMarshalerEncoder) Encode(ptr unsafe.Pointer, stream *Stream
 	if err != nil {
 		stream.Error = err
 	} else {
-		stream.Write(bytes)
+		_, _ = stream.Write(bytes)
 	}
 }
 

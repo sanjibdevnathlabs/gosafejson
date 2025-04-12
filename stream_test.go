@@ -22,10 +22,10 @@ func Test_writeByte_should_grow_buffer(t *testing.T) {
 func Test_writeBytes_should_grow_buffer(t *testing.T) {
 	should := require.New(t)
 	stream := NewStream(ConfigDefault, nil, 1)
-	stream.Write([]byte{'1', '2'})
+	_, _ = stream.Write([]byte{'1', '2'})
 	should.Equal("12", string(stream.Buffer()))
 	should.Equal(2, len(stream.buf))
-	stream.Write([]byte{'3', '4', '5', '6', '7'})
+	_, _ = stream.Write([]byte{'3', '4', '5', '6', '7'})
 	should.Equal("1234567", string(stream.Buffer()))
 	should.Equal(7, len(stream.buf))
 }

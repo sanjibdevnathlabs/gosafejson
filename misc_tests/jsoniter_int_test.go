@@ -1,3 +1,4 @@
+//go:build go1.8
 // +build go1.8
 
 package misc_tests
@@ -6,12 +7,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"math/rand"
 	"strconv"
 	"testing"
 
-	"github.com/json-iterator/go"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/require"
 )
 
@@ -26,7 +26,8 @@ func Test_read_int32_array(t *testing.T) {
 	should := require.New(t)
 	input := `[123,456,789]`
 	val := make([]int32, 0)
-	jsoniter.UnmarshalFromString(input, &val)
+	err := jsoniter.UnmarshalFromString(input, &val)
+	should.Nil(err)
 	should.Equal(3, len(val))
 }
 
@@ -34,7 +35,8 @@ func Test_read_int64_array(t *testing.T) {
 	should := require.New(t)
 	input := `[123,456,789]`
 	val := make([]int64, 0)
-	jsoniter.UnmarshalFromString(input, &val)
+	err := jsoniter.UnmarshalFromString(input, &val)
+	should.Nil(err)
 	should.Equal(3, len(val))
 }
 
@@ -130,10 +132,12 @@ func TestIterator_ReadInt_chunkedInput(t *testing.T) {
 }
 
 // jsonFloatIntArray generates JSON array where every
-//  - even item is float 0.1
-//  - odd item is integer 0
 //
-//  [0.1, 0, 0.1, 0]
+//   - even item is float 0.1
+//
+//   - odd item is integer 0
+//
+//     [0.1, 0, 0.1, 0]
 func jsonFloatIntArray(t *testing.T, numberOfItems int) []byte {
 	t.Helper()
 	numbers := make([]jsoniter.Any, numberOfItems)
@@ -162,7 +166,7 @@ func jsonFloatIntArray(t *testing.T, numberOfItems int) []byte {
 }
 
 func Benchmark_jsoniter_encode_int(b *testing.B) {
-	stream := jsoniter.NewStream(jsoniter.ConfigDefault, ioutil.Discard, 64)
+	stream := jsoniter.NewStream(jsoniter.ConfigDefault, io.Discard, 64)
 	for n := 0; n < b.N; n++ {
 		stream.Reset(nil)
 		stream.WriteUint64(0xffffffff)
@@ -185,8 +189,12 @@ func Benchmark_jsoniter_int(b *testing.B) {
 }
 
 func Benchmark_json_int(b *testing.B) {
+	var err error
 	for n := 0; n < b.N; n++ {
 		result := int64(0)
-		json.Unmarshal([]byte(`-100`), &result)
+		err = json.Unmarshal([]byte(`-100`), &result)
+	}
+	if err != nil {
+		b.Error(err)
 	}
 }

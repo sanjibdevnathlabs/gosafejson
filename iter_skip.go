@@ -80,10 +80,10 @@ func (iter *Iterator) Skip() {
 		iter.skipThreeBytes('r', 'u', 'e') // true
 	case 'f':
 		iter.skipFourBytes('a', 'l', 's', 'e') // false
-	case '0':
+	case '0': // Original logic for '0'
 		iter.unreadByte()
 		iter.ReadFloat32()
-	case '-', '1', '2', '3', '4', '5', '6', '7', '8', '9':
+	case '-', '1', '2', '3', '4', '5', '6', '7', '8', '9': // Original logic for other numbers
 		iter.skipNumber()
 	case '[':
 		iter.skipArray()

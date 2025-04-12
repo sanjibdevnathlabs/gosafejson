@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/json-iterator/go"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/require"
 )
 
@@ -187,8 +187,12 @@ func Benchmark_json_skip(b *testing.B) {
     },
     "code": 200
 }`)
+	var err error
 	for n := 0; n < b.N; n++ {
 		result := TestResp{}
-		json.Unmarshal(input, &result)
+		err = json.Unmarshal(input, &result)
+	}
+	if err != nil {
+		b.Error(err)
 	}
 }

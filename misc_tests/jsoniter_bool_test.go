@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/json-iterator/go"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/require"
 )
 
@@ -29,7 +29,7 @@ func Test_write_true_false(t *testing.T) {
 	stream.WriteTrue()
 	stream.WriteFalse()
 	stream.WriteBool(false)
-	stream.Flush()
+	_ = stream.Flush()
 	should.Nil(stream.Error)
 	should.Equal("truefalsefalse", buf.String())
 }
@@ -40,7 +40,7 @@ func Test_write_val_bool(t *testing.T) {
 	stream := jsoniter.NewStream(jsoniter.ConfigDefault, buf, 4096)
 	stream.WriteVal(true)
 	should.Equal(stream.Buffered(), 4)
-	stream.Flush()
+	_ = stream.Flush()
 	should.Equal(stream.Buffered(), 0)
 	should.Nil(stream.Error)
 	should.Equal("true", buf.String())

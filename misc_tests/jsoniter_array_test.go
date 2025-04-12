@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/json-iterator/go"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/require"
 )
 
@@ -114,7 +114,7 @@ func Test_write_array(t *testing.T) {
 	stream.WriteMore()
 	stream.WriteInt(2)
 	stream.WriteArrayEnd()
-	stream.Flush()
+	_ = stream.Flush()
 	should.Nil(stream.Error)
 	should.Equal("[\n  1,\n  2\n]", buf.String())
 }
@@ -215,14 +215,16 @@ func Test_decode_byte_array_from_array(t *testing.T) {
 func Test_decode_slice(t *testing.T) {
 	should := require.New(t)
 	slice := make([]string, 0, 5)
-	jsoniter.UnmarshalFromString(`["hello", "world"]`, &slice)
+	err := jsoniter.UnmarshalFromString(`["hello", "world"]`, &slice)
+	should.Nil(err)
 	should.Equal([]string{"hello", "world"}, slice)
 }
 
 func Test_decode_large_slice(t *testing.T) {
 	should := require.New(t)
 	slice := make([]int, 0, 1)
-	jsoniter.UnmarshalFromString(`[1,2,3,4,5,6,7,8,9]`, &slice)
+	err := jsoniter.UnmarshalFromString(`[1,2,3,4,5,6,7,8,9]`, &slice)
+	should.Nil(err)
 	should.Equal([]int{1, 2, 3, 4, 5, 6, 7, 8, 9}, slice)
 }
 
@@ -240,8 +242,12 @@ func Benchmark_jsoniter_array(b *testing.B) {
 }
 
 func Benchmark_json_array(b *testing.B) {
+	var err error
 	for n := 0; n < b.N; n++ {
 		result := []interface{}{}
-		json.Unmarshal([]byte(`[1,2,3]`), &result)
+		err = json.Unmarshal([]byte(`[1,2,3]`), &result)
+	}
+	if err != nil {
+		b.Error(err)
 	}
 }

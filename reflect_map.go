@@ -322,7 +322,7 @@ func (encoder *sortKeysMapEncoder) Encode(ptr unsafe.Pointer, stream *Stream) {
 		if i != 0 {
 			stream.WriteMore()
 		}
-		stream.Write(keyValue.keyValue)
+		_, _ = stream.Write(keyValue.keyValue)
 	}
 	if subStream.Error != nil && stream.Error == nil {
 		stream.Error = subStream.Error

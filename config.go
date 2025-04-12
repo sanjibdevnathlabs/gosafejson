@@ -271,16 +271,18 @@ func (cfg *frozenConfig) escapeHTML(encoderExtension EncoderExtension) {
 	encoderExtension[reflect2.TypeOfPtr((*string)(nil)).Elem()] = &htmlEscapedStringEncoder{}
 }
 
-func (cfg *frozenConfig) cleanDecoders() {
+// TestingOnlyCleanDecoders cleans up the global decoder registration maps.
+// Should only be used for testing purposes.
+func TestingOnlyCleanDecoders() {
 	typeDecoders = map[string]ValDecoder{}
 	fieldDecoders = map[string]ValDecoder{}
-	*cfg = *(cfg.configBeforeFrozen.Froze().(*frozenConfig))
 }
 
-func (cfg *frozenConfig) cleanEncoders() {
+// TestingOnlyCleanEncoders cleans up the global encoder registration maps.
+// Should only be used for testing purposes.
+func TestingOnlyCleanEncoders() {
 	typeEncoders = map[string]ValEncoder{}
 	fieldEncoders = map[string]ValEncoder{}
-	*cfg = *(cfg.configBeforeFrozen.Froze().(*frozenConfig))
 }
 
 func (cfg *frozenConfig) MarshalToString(v interface{}) (string, error) {
@@ -370,6 +372,27 @@ func (cfg *frozenConfig) NewDecoder(reader io.Reader) *Decoder {
 func (cfg *frozenConfig) Valid(data []byte) bool {
 	iter := cfg.BorrowIterator(data)
 	defer cfg.ReturnIterator(iter)
+
+	// Find the first non-whitespace character to ensure input isn't just whitespace.
+	_ = iter.nextToken()   // Assign to _ to avoid unused variable error
+	if iter.Error != nil { // Error finding first token (e.g., empty/whitespace-only input) -> invalid
+		return false
+	}
+	iter.unreadByte() // Put the token back to be consumed by Skip()
+
+	// Now, try to skip the single top-level value
 	iter.Skip()
-	return iter.Error == nil
+
+	if iter.Error == io.EOF {
+		// EOF after Skip means the entire input was a single valid value.
+		return true
+	}
+	if iter.Error == nil {
+		// Skip succeeded before EOF. Check if only whitespace remains.
+		// nextToken() skips whitespace and returns the next token or io.EOF
+		iter.nextToken()
+		return iter.Error == io.EOF
+	}
+	// Any other error from Skip() means invalid.
+	return false
 }

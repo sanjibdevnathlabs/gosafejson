@@ -111,7 +111,7 @@ func (any *arrayLazyAny) Get(path ...interface{}) Any {
 		iter.ResetBytes(valueBytes)
 		return locatePath(iter, path[1:])
 	case int32:
-		if '*' == firstPath {
+		if firstPath == '*' {
 			iter := any.cfg.BorrowIterator(any.buf)
 			defer any.cfg.ReturnIterator(iter)
 			arr := make([]Any, 0)
@@ -143,7 +143,7 @@ func (any *arrayLazyAny) Size() int {
 }
 
 func (any *arrayLazyAny) WriteTo(stream *Stream) {
-	stream.Write(any.buf)
+	_, _ = stream.Write(any.buf)
 }
 
 func (any *arrayLazyAny) GetInterface() interface{} {
@@ -249,7 +249,7 @@ func (any *arrayAny) Get(path ...interface{}) Any {
 		}
 		return Wrap(any.val.Index(firstPath).Interface())
 	case int32:
-		if '*' == firstPath {
+		if firstPath == '*' {
 			mappedAll := make([]Any, 0)
 			for i := 0; i < any.val.Len(); i++ {
 				mapped := Wrap(any.val.Index(i).Interface()).Get(path[1:]...)

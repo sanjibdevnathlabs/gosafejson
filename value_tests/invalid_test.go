@@ -3,11 +3,12 @@ package test
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/json-iterator/go"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"io"
 	"testing"
+
+	jsoniter "github.com/json-iterator/go"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_missing_object_end(t *testing.T) {
@@ -57,7 +58,7 @@ func Test_invalid_struct_input(t *testing.T) {
 
 func Test_invalid_slice_input(t *testing.T) {
 	should := require.New(t)
-	type TestObject struct{}
+	// type TestObject struct{}
 	input := []byte{93}
 	obj := []string{}
 	should.NotNil(jsoniter.Unmarshal(input, &obj))
@@ -65,7 +66,7 @@ func Test_invalid_slice_input(t *testing.T) {
 
 func Test_invalid_array_input(t *testing.T) {
 	should := require.New(t)
-	type TestObject struct{}
+	// type TestObject struct{}
 	input := []byte{93}
 	obj := [0]string{}
 	should.NotNil(jsoniter.Unmarshal(input, &obj))
@@ -185,6 +186,7 @@ func Test_func_pointer_type(t *testing.T) {
 	}
 	t.Run("encode null is valid", func(t *testing.T) {
 		should := require.New(t)
+		//nolint:staticcheck
 		output, err := json.Marshal(TestObject1{})
 		should.Nil(err)
 		should.Equal(`{"Obj":null}`, string(output))
@@ -194,8 +196,10 @@ func Test_func_pointer_type(t *testing.T) {
 	})
 	t.Run("encode not null is invalid", func(t *testing.T) {
 		should := require.New(t)
+		//nolint:staticcheck
 		_, err := json.Marshal(TestObject1{Obj: &TestObject2{}})
 		should.NotNil(err)
+		//nolint:staticcheck
 		_, err = jsoniter.Marshal(TestObject1{Obj: &TestObject2{}})
 		should.NotNil(err)
 	})

@@ -5,7 +5,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/json-iterator/go"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/require"
 )
 
@@ -109,8 +109,12 @@ func Benchmark_jsoniter_float(b *testing.B) {
 }
 
 func Benchmark_json_float(b *testing.B) {
+	var err error
 	for n := 0; n < b.N; n++ {
 		result := float64(0)
-		json.Unmarshal([]byte(`1.1`), &result)
+		err = json.Unmarshal([]byte(`1.1`), &result)
+	}
+	if err != nil {
+		b.Error(err)
 	}
 }

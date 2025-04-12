@@ -3,11 +3,12 @@ package jsoniter
 import (
 	"errors"
 	"fmt"
-	"github.com/modern-go/reflect2"
 	"io"
 	"reflect"
 	"strconv"
 	"unsafe"
+
+	"github.com/modern-go/reflect2"
 )
 
 // Any generic object representation.
@@ -137,7 +138,7 @@ func Wrap(val interface{}) Any {
 	case reflect.Float64:
 		return WrapFloat64(val.(float64))
 	case reflect.Bool:
-		if val.(bool) == true {
+		if val.(bool) {
 			return &trueAny{}
 		}
 		return &falseAny{}
@@ -243,7 +244,7 @@ func locatePath(iter *Iterator, path []interface{}) Any {
 			}
 			iter.ResetBytes(valueBytes)
 		case int32:
-			if '*' == pathKey {
+			if pathKey == '*' {
 				return iter.readAny().Get(path[i:]...)
 			}
 			return newInvalidAny(path[i:])

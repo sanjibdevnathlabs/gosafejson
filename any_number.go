@@ -113,7 +113,7 @@ func (any *numberLazyAny) ToString() string {
 }
 
 func (any *numberLazyAny) WriteTo(stream *Stream) {
-	stream.Write(any.buf)
+	_, _ = stream.Write(any.buf)
 }
 
 func (any *numberLazyAny) GetInterface() interface{} {

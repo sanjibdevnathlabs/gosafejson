@@ -3,10 +3,11 @@ package test
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/json-iterator/go"
-	"github.com/stretchr/testify/require"
-	"io/ioutil"
+	"io"
 	"testing"
+
+	jsoniter "github.com/json-iterator/go"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_disallowUnknownFields(t *testing.T) {
@@ -27,12 +28,14 @@ func Test_new_decoder(t *testing.T) {
 	should.Equal([]int{1}, arr1)
 	arr2 := []int{}
 	should.True(decoder1.More())
-	buffered, _ := ioutil.ReadAll(decoder1.Buffered())
+	buffered, err := io.ReadAll(decoder1.Buffered())
+	should.Nil(err)
 	should.Equal("[2]", string(buffered))
 	should.Nil(decoder2.Decode(&arr2))
 	should.Equal([]int{1}, arr2)
 	should.True(decoder2.More())
-	buffered, _ = ioutil.ReadAll(decoder2.Buffered())
+	buffered, err = io.ReadAll(decoder2.Buffered())
+	should.Nil(err)
 	should.Equal("[2]", string(buffered))
 
 	should.Nil(decoder1.Decode(&arr1))

@@ -126,7 +126,7 @@ type Encoder struct {
 func (adapter *Encoder) Encode(val interface{}) error {
 	adapter.stream.WriteVal(val)
 	adapter.stream.WriteRaw("\n")
-	adapter.stream.Flush()
+	_ = adapter.stream.Flush()
 	return adapter.stream.Error
 }
 

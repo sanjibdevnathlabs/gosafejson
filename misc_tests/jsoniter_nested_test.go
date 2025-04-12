@@ -2,10 +2,11 @@ package misc_tests
 
 import (
 	"encoding/json"
-	"github.com/json-iterator/go"
 	"reflect"
 	"strings"
 	"testing"
+
+	jsoniter "github.com/json-iterator/go"
 )
 
 type Level1 struct {
@@ -17,8 +18,6 @@ type Level2 struct {
 }
 
 func Test_deep_nested(t *testing.T) {
-	type unstructured interface{}
-
 	testcases := []struct {
 		name        string
 		data        []byte
@@ -320,8 +319,12 @@ func readLevel1Hello(iter *jsoniter.Iterator) []Level2 {
 }
 
 func Benchmark_json_nested(b *testing.B) {
+	var err error
 	for n := 0; n < b.N; n++ {
 		l1 := Level1{}
-		json.Unmarshal([]byte(`{"hello": [{"world": "value1"}, {"world": "value2"}]}`), &l1)
+		err = json.Unmarshal([]byte(`{"hello": [{"world": "value1"}, {"world": "value2"}]}`), &l1)
+	}
+	if err != nil {
+		b.Error(err)
 	}
 }

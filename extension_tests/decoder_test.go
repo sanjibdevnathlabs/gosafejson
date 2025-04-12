@@ -3,12 +3,14 @@ package test
 import (
 	"bytes"
 	"fmt"
-	"github.com/json-iterator/go"
-	"github.com/stretchr/testify/require"
+	"reflect"
 	"strconv"
 	"testing"
 	"time"
 	"unsafe"
+
+	jsoniter "github.com/json-iterator/go"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_customize_type_decoder(t *testing.T) {
@@ -52,7 +54,7 @@ type CustomEncoderAttachmentTestStruct struct {
 	Value int32 `json:"value"`
 }
 
-type CustomEncoderAttachmentTestStructEncoder struct {}
+type CustomEncoderAttachmentTestStructEncoder struct{}
 
 func (c *CustomEncoderAttachmentTestStructEncoder) Encode(ptr unsafe.Pointer, stream *jsoniter.Stream) {
 	attachVal, ok := stream.Attachment.(int)
@@ -80,19 +82,22 @@ func Test_custom_encoder_attachment(t *testing.T) {
 	should.Equal("{\"a\":\"true 17\"}", buf.String())
 }
 
+type Tom struct {
+	Field1 string
+}
+
 func Test_customize_field_decoder(t *testing.T) {
-	type Tom struct {
-		field1 string
-	}
-	jsoniter.RegisterFieldDecoderFunc("jsoniter.Tom", "field1", func(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
+	defer jsoniter.TestingOnlyCleanDecoders()
+	jsoniter.RegisterFieldDecoderFunc(reflect.TypeOf(Tom{}).String(), "Field1", func(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
 		*((*string)(ptr)) = strconv.Itoa(iter.ReadInt())
 	})
-	//defer jsoniter.ConfigDefault.(*frozenConfig).cleanDecoders()
 	tom := Tom{}
-	err := jsoniter.Unmarshal([]byte(`{"field1": 100}`), &tom)
+	err := jsoniter.Unmarshal([]byte(`{"Field1": 100}`), &tom)
 	if err != nil {
 		t.Fatal(err)
 	}
+	should := require.New(t)
+	should.Equal("100", tom.Field1)
 }
 
 func Test_recursive_empty_interface_customization(t *testing.T) {
@@ -107,7 +112,8 @@ func Test_recursive_empty_interface_customization(t *testing.T) {
 		}
 	})
 	should := require.New(t)
-	jsoniter.Unmarshal([]byte("[100]"), &obj)
+	err := jsoniter.Unmarshal([]byte("[100]"), &obj)
+	should.Nil(err)
 	should.Equal([]interface{}{int64(100)}, obj)
 }
 
