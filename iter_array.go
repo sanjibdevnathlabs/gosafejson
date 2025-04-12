@@ -1,4 +1,4 @@
-package jsoniter
+package gosafejson
 
 // ReadArray read array element, tells if the array has more element to read.
 func (iter *Iterator) ReadArray() (ret bool) {

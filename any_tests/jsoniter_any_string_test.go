@@ -3,7 +3,7 @@ package any_tests
 import (
 	"testing"
 
-	"github.com/json-iterator/go"
+	"github.com/sanjibdevnathlabs/gosafejson"
 	"github.com/stretchr/testify/require"
 )
 
@@ -32,27 +32,27 @@ var stringConvertMap = map[string]string{
 func Test_read_any_to_string(t *testing.T) {
 	should := require.New(t)
 	for k, v := range stringConvertMap {
-		any := jsoniter.Get([]byte(k))
+		any := gosafejson.Get([]byte(k))
 		should.Equal(v, any.ToString(), "original val "+k)
 	}
 }
 
 func Test_read_string_as_any(t *testing.T) {
 	should := require.New(t)
-	any := jsoniter.Get([]byte(`"hello"`))
+	any := gosafejson.Get([]byte(`"hello"`))
 	should.Equal("hello", any.ToString())
 	should.True(any.ToBool())
-	any = jsoniter.Get([]byte(`" "`))
+	any = gosafejson.Get([]byte(`" "`))
 	should.False(any.ToBool())
-	any = jsoniter.Get([]byte(`"false"`))
+	any = gosafejson.Get([]byte(`"false"`))
 	should.True(any.ToBool())
-	any = jsoniter.Get([]byte(`"123"`))
+	any = gosafejson.Get([]byte(`"123"`))
 	should.Equal(123, any.ToInt())
 }
 
 func Test_wrap_string(t *testing.T) {
 	should := require.New(t)
-	any := jsoniter.Get([]byte("-32000")).MustBeValid()
+	any := gosafejson.Get([]byte("-32000")).MustBeValid()
 	should.Equal(-32000, any.ToInt())
 	should.NoError(any.LastError())
 }

@@ -1,4 +1,4 @@
-package jsoniter
+package gosafejson
 
 import (
 	"bytes"

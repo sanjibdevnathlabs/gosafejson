@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/json-iterator/go"
+	"github.com/sanjibdevnathlabs/gosafejson"
 	"github.com/stretchr/testify/require"
 )
 
@@ -36,9 +36,9 @@ var boolConvertMap = map[string]bool{
 func Test_read_bool_as_any(t *testing.T) {
 	should := require.New(t)
 
-	var any jsoniter.Any
+	var any gosafejson.Any
 	for k, v := range boolConvertMap {
-		any = jsoniter.Get([]byte(k))
+		any = gosafejson.Get([]byte(k))
 		if v {
 			should.True(any.ToBool(), fmt.Sprintf("origin val is %v", k))
 		} else {
@@ -50,16 +50,16 @@ func Test_read_bool_as_any(t *testing.T) {
 
 func Test_write_bool_to_stream(t *testing.T) {
 	should := require.New(t)
-	any := jsoniter.Get([]byte("true"))
-	stream := jsoniter.NewStream(jsoniter.ConfigDefault, nil, 32)
+	any := gosafejson.Get([]byte("true"))
+	stream := gosafejson.NewStream(gosafejson.ConfigDefault, nil, 32)
 	any.WriteTo(stream)
 	should.Equal("true", string(stream.Buffer()))
-	should.Equal(any.ValueType(), jsoniter.BoolValue)
+	should.Equal(any.ValueType(), gosafejson.BoolValue)
 
-	any = jsoniter.Get([]byte("false"))
-	stream = jsoniter.NewStream(jsoniter.ConfigDefault, nil, 32)
+	any = gosafejson.Get([]byte("false"))
+	stream = gosafejson.NewStream(gosafejson.ConfigDefault, nil, 32)
 	any.WriteTo(stream)
 	should.Equal("false", string(stream.Buffer()))
 
-	should.Equal(any.ValueType(), jsoniter.BoolValue)
+	should.Equal(any.ValueType(), gosafejson.BoolValue)
 }

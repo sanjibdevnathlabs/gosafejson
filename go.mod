@@ -1,4 +1,4 @@
-module github.com/json-iterator/go
+module github.com/sanjibdevnathlabs/gosafejson
 
 go 1.24
 

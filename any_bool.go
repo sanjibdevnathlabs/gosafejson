@@ -1,4 +1,4 @@
-package jsoniter
+package gosafejson
 
 type trueAny struct {
 	baseAny

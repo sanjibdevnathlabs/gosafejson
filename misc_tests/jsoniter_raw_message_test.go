@@ -2,7 +2,7 @@ package misc_tests
 
 import (
 	"encoding/json"
-	"github.com/json-iterator/go"
+	"github.com/sanjibdevnathlabs/gosafejson"
 	"github.com/stretchr/testify/require"
 	"strings"
 	"testing"
@@ -10,20 +10,20 @@ import (
 
 func Test_jsoniter_RawMessage(t *testing.T) {
 	should := require.New(t)
-	var data jsoniter.RawMessage
-	should.Nil(jsoniter.Unmarshal([]byte(`[1,2,3]`), &data))
+	var data gosafejson.RawMessage
+	should.Nil(gosafejson.Unmarshal([]byte(`[1,2,3]`), &data))
 	should.Equal(`[1,2,3]`, string(data))
-	str, err := jsoniter.MarshalToString(data)
+	str, err := gosafejson.MarshalToString(data)
 	should.Nil(err)
 	should.Equal(`[1,2,3]`, str)
 }
 
 func Test_encode_map_of_jsoniter_raw_message(t *testing.T) {
 	should := require.New(t)
-	type RawMap map[string]*jsoniter.RawMessage
-	value := jsoniter.RawMessage("[]")
+	type RawMap map[string]*gosafejson.RawMessage
+	value := gosafejson.RawMessage("[]")
 	rawMap := RawMap{"hello": &value}
-	output, err := jsoniter.MarshalToString(rawMap)
+	output, err := gosafejson.MarshalToString(rawMap)
 	should.Nil(err)
 	should.Equal(`{"hello":[]}`, output)
 }
@@ -36,27 +36,27 @@ func Test_marshal_invalid_json_raw_message(t *testing.T) {
 
 	a := A{}
 	should := require.New(t)
-	should.Nil(jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(message, &a))
-	aout, aouterr := jsoniter.ConfigCompatibleWithStandardLibrary.Marshal(&a)
+	should.Nil(gosafejson.ConfigCompatibleWithStandardLibrary.Unmarshal(message, &a))
+	aout, aouterr := gosafejson.ConfigCompatibleWithStandardLibrary.Marshal(&a)
 	should.Equal(`{"raw":null}`, string(aout))
 	should.Nil(aouterr)
 }
 
 func Test_marshal_nil_json_raw_message(t *testing.T) {
 	type A struct {
-		Nil1 jsoniter.RawMessage `json:"raw1"`
+		Nil1 gosafejson.RawMessage `json:"raw1"`
 		Nil2 json.RawMessage     `json:"raw2"`
 	}
 
 	a := A{}
 	should := require.New(t)
-	aout, aouterr := jsoniter.Marshal(&a)
+	aout, aouterr := gosafejson.Marshal(&a)
 	should.Equal(`{"raw1":null,"raw2":null}`, string(aout))
 	should.Nil(aouterr)
 
 	a.Nil1 = []byte(`Any`)
 	a.Nil2 = []byte(`Any`)
-	should.Nil(jsoniter.Unmarshal(aout, &a))
+	should.Nil(gosafejson.Unmarshal(aout, &a))
 	should.Nil(a.Nil1)
 	should.Nil(a.Nil2)
 }
@@ -72,14 +72,14 @@ func Test_raw_message_memory_not_copied_issue(t *testing.T) {
 		BiddingMax  *float32             `json:"bidding_max"`
 		BiddingMin  *float32             `json:"bidding_min"`
 		BiddingType *string              `json:"bidding_type"`
-		Freq        *jsoniter.RawMessage `json:"freq"`
-		Targeting   *jsoniter.RawMessage `json:"targeting"`
-		Url         *jsoniter.RawMessage `json:"url"`
+		Freq        *gosafejson.RawMessage `json:"freq"`
+		Targeting   *gosafejson.RawMessage `json:"targeting"`
+		Url         *gosafejson.RawMessage `json:"url"`
 		Speed       *int                 `json:"speed" db:"speed"`
 	}
 
 	obj := &IteratorObject{}
-	decoder := jsoniter.NewDecoder(strings.NewReader(jsonStream))
+	decoder := gosafejson.NewDecoder(strings.NewReader(jsonStream))
 	err := decoder.Decode(obj)
 	should := require.New(t)
 	should.Nil(err)

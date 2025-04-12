@@ -3,7 +3,7 @@ package skip_tests
 import (
 	"encoding/json"
 	"errors"
-	"github.com/json-iterator/go"
+	"github.com/sanjibdevnathlabs/gosafejson"
 	"github.com/stretchr/testify/require"
 	"io"
 	"reflect"
@@ -25,7 +25,7 @@ func Test_skip(t *testing.T) {
 				should := require.New(t)
 				ptrVal := reflect.New(valType)
 				stdErr := json.Unmarshal([]byte(input), ptrVal.Interface())
-				iter := jsoniter.ParseString(jsoniter.ConfigDefault, input)
+				iter := gosafejson.ParseString(gosafejson.ConfigDefault, input)
 				iter.Skip()
 				iter.ReadNil() // trigger looking forward
 				err := iter.Error

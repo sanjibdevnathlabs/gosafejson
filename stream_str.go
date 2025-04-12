@@ -1,4 +1,4 @@
-package jsoniter
+package gosafejson
 
 import (
 	"unicode/utf8"

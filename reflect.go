@@ -1,4 +1,4 @@
-package jsoniter
+package gosafejson
 
 import (
 	"fmt"
@@ -9,8 +9,8 @@ import (
 )
 
 // ValDecoder is an internal type registered to cache as needed.
-// Don't confuse jsoniter.ValDecoder with json.Decoder.
-// For json.Decoder's adapter, refer to jsoniter.AdapterDecoder(todo link).
+// Don't confuse gosafejson.ValDecoder with json.Decoder.
+// For json.Decoder's adapter, refer to gosafejson.AdapterDecoder(todo link).
 //
 // Reflection on type to create decoders, which is then cached
 // Reflection on value is avoided as we can, as the reflect.Value itself will allocate, with following exceptions
@@ -23,8 +23,8 @@ type ValDecoder interface {
 }
 
 // ValEncoder is an internal type registered to cache as needed.
-// Don't confuse jsoniter.ValEncoder with json.Encoder.
-// For json.Encoder's adapter, refer to jsoniter.AdapterEncoder(todo godoc link).
+// Don't confuse gosafejson.ValEncoder with json.Encoder.
+// For json.Encoder's adapter, refer to gosafejson.AdapterEncoder(todo godoc link).
 type ValEncoder interface {
 	IsEmpty(ptr unsafe.Pointer) bool
 	Encode(ptr unsafe.Pointer, stream *Stream)

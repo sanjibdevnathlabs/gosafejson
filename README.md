@@ -41,9 +41,9 @@ json.Marshal(&data)
 with
 
 ```go
-import jsoniter "github.com/json-iterator/go"
+import "github.com/sanjibdevnathlabs/gosafejson"
 
-var json = jsoniter.ConfigCompatibleWithStandardLibrary
+var json = gosafejson.ConfigCompatibleWithStandardLibrary
 json.Marshal(&data)
 ```
 
@@ -57,9 +57,9 @@ json.Unmarshal(input, &data)
 with
 
 ```go
-import jsoniter "github.com/json-iterator/go"
+import "github.com/sanjibdevnathlabs/gosafejson"
 
-var json = jsoniter.ConfigCompatibleWithStandardLibrary
+var json = gosafejson.ConfigCompatibleWithStandardLibrary
 json.Unmarshal(input, &data)
 ```
 
@@ -68,7 +68,7 @@ json.Unmarshal(input, &data)
 # How to get
 
 ```
-go get github.com/json-iterator/go
+go get github.com/sanjibdevnathlabs/gosafejson
 ```
 
 # Contribution Welcomed !

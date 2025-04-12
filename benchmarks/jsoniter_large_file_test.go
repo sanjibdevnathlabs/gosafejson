@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	jsoniter "github.com/json-iterator/go"
+	"github.com/sanjibdevnathlabs/gosafejson"
 )
 
 //func Test_large_file(t *testing.T) {
@@ -135,9 +135,9 @@ func Benchmark_jsoniter_large_file(b *testing.B) {
 		if err != nil {
 			b.Fatal(err)
 		}
-		iter := jsoniter.Parse(jsoniter.ConfigDefault, file, 4096)
+		iter := gosafejson.Parse(gosafejson.ConfigDefault, file, 4096)
 		count := 0
-		iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
+		iter.ReadArrayCB(func(iter *gosafejson.Iterator) bool {
 			// Skip() is strict by default, use --tags jsoniter-sloppy to skip without validation
 			iter.Skip()
 			count++

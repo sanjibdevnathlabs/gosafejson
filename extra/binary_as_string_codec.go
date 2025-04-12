@@ -1,7 +1,7 @@
 package extra
 
 import (
-	"github.com/json-iterator/go"
+	"github.com/sanjibdevnathlabs/gosafejson"
 	"github.com/modern-go/reflect2"
 	"unicode/utf8"
 	"unsafe"
@@ -115,17 +115,17 @@ var safeSet = [utf8.RuneSelf]bool{
 var binaryType = reflect2.TypeOfPtr((*[]byte)(nil)).Elem()
 
 type BinaryAsStringExtension struct {
-	jsoniter.DummyExtension
+	gosafejson.DummyExtension
 }
 
-func (extension *BinaryAsStringExtension) CreateEncoder(typ reflect2.Type) jsoniter.ValEncoder {
+func (extension *BinaryAsStringExtension) CreateEncoder(typ reflect2.Type) gosafejson.ValEncoder {
 	if typ == binaryType {
 		return &binaryAsStringCodec{}
 	}
 	return nil
 }
 
-func (extension *BinaryAsStringExtension) CreateDecoder(typ reflect2.Type) jsoniter.ValDecoder {
+func (extension *BinaryAsStringExtension) CreateDecoder(typ reflect2.Type) gosafejson.ValDecoder {
 	if typ == binaryType {
 		return &binaryAsStringCodec{}
 	}
@@ -135,7 +135,7 @@ func (extension *BinaryAsStringExtension) CreateDecoder(typ reflect2.Type) jsoni
 type binaryAsStringCodec struct {
 }
 
-func (codec *binaryAsStringCodec) Decode(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
+func (codec *binaryAsStringCodec) Decode(ptr unsafe.Pointer, iter *gosafejson.Iterator) {
 	rawBytes := iter.ReadStringAsSlice()
 	bytes := make([]byte, 0, len(rawBytes))
 	for i := 0; i < len(rawBytes); i++ {
@@ -163,12 +163,12 @@ func (codec *binaryAsStringCodec) Decode(ptr unsafe.Pointer, iter *jsoniter.Iter
 func (codec *binaryAsStringCodec) IsEmpty(ptr unsafe.Pointer) bool {
 	return len(*((*[]byte)(ptr))) == 0
 }
-func (codec *binaryAsStringCodec) Encode(ptr unsafe.Pointer, stream *jsoniter.Stream) {
+func (codec *binaryAsStringCodec) Encode(ptr unsafe.Pointer, stream *gosafejson.Stream) {
 	newBuffer := writeBytes(stream.Buffer(), *(*[]byte)(ptr))
 	stream.SetBuffer(newBuffer)
 }
 
-func readHex(iter *jsoniter.Iterator, b1, b2 byte) byte {
+func readHex(iter *gosafejson.Iterator, b1, b2 byte) byte {
 	var ret byte
 	if b1 >= '0' && b1 <= '9' {
 		ret = b1 - '0'

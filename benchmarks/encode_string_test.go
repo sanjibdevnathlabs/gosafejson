@@ -2,7 +2,7 @@ package test
 
 import (
 	"bytes"
-	"github.com/json-iterator/go"
+	"github.com/sanjibdevnathlabs/gosafejson"
 	"testing"
 )
 
@@ -12,7 +12,7 @@ func Benchmark_encode_string_with_SetEscapeHTML(b *testing.B) {
 		B bool
 		I int
 	}
-	var json = jsoniter.ConfigCompatibleWithStandardLibrary
+	var json = gosafejson.ConfigCompatibleWithStandardLibrary
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		buf := &bytes.Buffer{}

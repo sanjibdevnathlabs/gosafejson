@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	jsoniter "github.com/json-iterator/go"
+	"github.com/sanjibdevnathlabs/gosafejson"
 	"github.com/stretchr/testify/require"
 )
 
@@ -13,7 +13,7 @@ import (
 func TestEncoderHasTrailingNewline(t *testing.T) {
 	should := require.New(t)
 	var buf, stdbuf bytes.Buffer
-	enc := jsoniter.ConfigCompatibleWithStandardLibrary.NewEncoder(&buf)
+	enc := gosafejson.ConfigCompatibleWithStandardLibrary.NewEncoder(&buf)
 	err := enc.Encode(1)
 	should.Nil(err)
 	stdenc := json.NewEncoder(&stdbuf)

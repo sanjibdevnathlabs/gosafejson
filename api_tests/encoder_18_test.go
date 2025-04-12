@@ -10,7 +10,7 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	jsoniter "github.com/json-iterator/go"
+	"github.com/sanjibdevnathlabs/gosafejson"
 	"github.com/stretchr/testify/require"
 )
 
@@ -23,7 +23,7 @@ func Test_new_encoder(t *testing.T) {
 	should.Nil(err)
 	should.Equal("[1]\n", buf1.String())
 	buf2 := &bytes.Buffer{}
-	encoder2 := jsoniter.NewEncoder(buf2)
+	encoder2 := gosafejson.NewEncoder(buf2)
 	encoder2.SetEscapeHTML(false)
 	err = encoder2.Encode([]int{1})
 	should.Nil(err)
@@ -31,7 +31,7 @@ func Test_new_encoder(t *testing.T) {
 }
 
 func Test_string_encode_with_std_without_html_escape(t *testing.T) {
-	api := jsoniter.Config{EscapeHTML: false}.Froze()
+	api := gosafejson.Config{EscapeHTML: false}.Froze()
 	should := require.New(t)
 	for i := 0; i < utf8.RuneSelf; i++ {
 		input := string([]byte{byte(i)})

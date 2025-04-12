@@ -1,4 +1,4 @@
-package jsoniter
+package gosafejson
 
 var digits []uint32
 

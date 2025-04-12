@@ -1,6 +1,6 @@
 //+build jsoniter_sloppy
 
-package jsoniter
+package gosafejson
 
 // sloppy but faster implementation, do not validate the input json
 

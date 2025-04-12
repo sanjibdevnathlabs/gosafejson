@@ -1,4 +1,4 @@
-package jsoniter
+package gosafejson
 
 import (
 	"io"
@@ -16,7 +16,7 @@ type Stream struct {
 }
 
 // NewStream create new stream instance.
-// cfg can be jsoniter.ConfigDefault.
+// cfg can be gosafejson.ConfigDefault.
 // out can be nil if write to internal buffer.
 // bufSize is the initial size for the internal buffer in bytes.
 func NewStream(cfg API, out io.Writer, bufSize int) *Stream {

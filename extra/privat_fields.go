@@ -1,21 +1,21 @@
 package extra
 
 import (
-	"github.com/json-iterator/go"
+	"github.com/sanjibdevnathlabs/gosafejson"
 	"strings"
 	"unicode"
 )
 
 // SupportPrivateFields include private fields when encoding/decoding
 func SupportPrivateFields() {
-	jsoniter.RegisterExtension(&privateFieldsExtension{})
+	gosafejson.RegisterExtension(&privateFieldsExtension{})
 }
 
 type privateFieldsExtension struct {
-	jsoniter.DummyExtension
+	gosafejson.DummyExtension
 }
 
-func (extension *privateFieldsExtension) UpdateStructDescriptor(structDescriptor *jsoniter.StructDescriptor) {
+func (extension *privateFieldsExtension) UpdateStructDescriptor(structDescriptor *gosafejson.StructDescriptor) {
 	for _, binding := range structDescriptor.Fields {
 		isPrivate := unicode.IsLower(rune(binding.Field.Name()[0]))
 		if isPrivate {

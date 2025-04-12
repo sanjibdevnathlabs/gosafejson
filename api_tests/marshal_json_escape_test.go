@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"testing"
 
-	jsoniter "github.com/json-iterator/go"
+	"github.com/sanjibdevnathlabs/gosafejson"
 	"github.com/stretchr/testify/require"
 )
 
-var marshalConfig = jsoniter.Config{
+var marshalConfig = gosafejson.Config{
 	EscapeHTML:             false,
 	SortMapKeys:            true,
 	ValidateJsonRawMessage: true,
