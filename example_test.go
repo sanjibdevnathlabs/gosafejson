@@ -175,7 +175,7 @@ func ExampleConfigSafe_Unmarshal() {
 	//
 	// Safe unmarshalling:
 	// Error: true
-	// Found 3 errors
+	// Found 2 errors
 	// Successfully parsed fields:
 	// UserID: user123
 	// Email: user@example.com
