@@ -63,6 +63,41 @@ var json = gosafejson.ConfigCompatibleWithStandardLibrary
 json.Unmarshal(input, &data)
 ```
 
+# Safe Unmarshalling
+
+`gosafejson` provides a safe unmarshalling mode that continues processing JSON even when type mismatches occur. This is useful when you want to extract as much valid data as possible from a JSON document, rather than failing completely on the first error.
+
+With standard unmarshalling (both in Go's standard library and in default mode), a type mismatch will cause the entire unmarshalling process to fail:
+
+```go
+type Details struct {
+    ID   *string                `json:"id"`
+    Data map[string]interface{} `json:"data"`
+    Name *string                `json:"name"`
+}
+
+// Type mismatch: "data" is an array, not a map
+jsonStr := `{"id":"12345", "data": [{"a":"b"}, {"c":"d"}], "name": "Random"}`
+
+var details Details
+err := gosafejson.ConfigCompatibleWithStandardLibrary.Unmarshal([]byte(jsonStr), &details)
+// err will contain an error, and details will be incomplete
+```
+
+With safe unmarshalling, the process continues after errors, and you get a composite error with all the issues encountered:
+
+```go
+var details Details
+err := gosafejson.ConfigSafe.Unmarshal([]byte(jsonStr), &details)
+// err will be of type *CompositeError with details on all type mismatches
+// Fields before the error will be properly unmarshalled (like ID in this example)
+```
+
+This is particularly useful when:
+- Working with inconsistent or evolving APIs
+- Processing data from third-party sources that may have inconsistencies
+- You need to extract partial data even when the full document has errors
+
 [More documentation](http://jsoniter.com/migrate-from-go-std.html)
 
 # How to get
@@ -70,15 +105,3 @@ json.Unmarshal(input, &data)
 ```
 go get github.com/sanjibdevnathlabs/gosafejson
 ```
-
-# Contribution Welcomed !
-
-Contributors
-
-- [thockin](https://github.com/thockin)
-- [mattn](https://github.com/mattn)
-- [cch123](https://github.com/cch123)
-- [Oleg Shaldybin](https://github.com/olegshaldybin)
-- [Jason Toffaletti](https://github.com/toffaletti)
-
-Report issue or pull request, or email taowen@gmail.com

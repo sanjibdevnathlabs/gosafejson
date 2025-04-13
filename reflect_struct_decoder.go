@@ -504,15 +504,37 @@ func (decoder *generalStructDecoder) Decode(ptr unsafe.Pointer, iter *Iterator) 
 		return
 	}
 	var c byte
-	for c = ','; c == ','; c = iter.nextToken() {
-		decoder.decodeOneField(ptr, iter)
+
+	// In safe mode, continue even when errors occur
+	if iter.cfg.safeUnmarshal {
+		for c = ','; c == ','; c = iter.nextToken() {
+			var prevErr = iter.Error
+			decoder.decodeOneField(ptr, iter)
+			// Clear the error so we can continue
+			if iter.Error != nil && iter.Error != io.EOF {
+				// Save the error
+				iter.CollectedErrors = append(iter.CollectedErrors, iter.Error)
+				iter.Error = prevErr
+			}
+		}
+
+		// Record the object end error if any
+		if c != '}' {
+			iter.ReportError("struct Decode", `expect }, but found `+string([]byte{c}))
+		}
+	} else {
+		// Original behavior for non-safe mode
+		for c = ','; c == ','; c = iter.nextToken() {
+			decoder.decodeOneField(ptr, iter)
+		}
+		if iter.Error != nil && iter.Error != io.EOF && len(decoder.typ.Type1().Name()) != 0 {
+			iter.Error = fmt.Errorf("%v.%s", decoder.typ, iter.Error.Error())
+		}
+		if c != '}' {
+			iter.ReportError("struct Decode", `expect }, but found `+string([]byte{c}))
+		}
 	}
-	if iter.Error != nil && iter.Error != io.EOF && len(decoder.typ.Type1().Name()) != 0 {
-		iter.Error = fmt.Errorf("%v.%s", decoder.typ, iter.Error.Error())
-	}
-	if c != '}' {
-		iter.ReportError("struct Decode", `expect }, but found `+string([]byte{c}))
-	}
+
 	iter.decrementDepth()
 }
 
@@ -1051,9 +1073,37 @@ type structFieldDecoder struct {
 
 func (decoder *structFieldDecoder) Decode(ptr unsafe.Pointer, iter *Iterator) {
 	fieldPtr := decoder.field.UnsafeGet(ptr)
-	decoder.fieldDecoder.Decode(fieldPtr, iter)
-	if iter.Error != nil && iter.Error != io.EOF {
-		iter.Error = fmt.Errorf("%s: %s", decoder.field.Name(), iter.Error.Error())
+
+	if iter.cfg.safeUnmarshal {
+		// In safe mode, capture the current error state to detect new errors
+		prevErrorCount := len(iter.CollectedErrors)
+		prevError := iter.Error
+
+		// Try to decode the value
+		decoder.fieldDecoder.Decode(fieldPtr, iter)
+
+		// If a new error occurred during field decoding
+		if iter.Error != nil && iter.Error != io.EOF {
+			// Format the error with field name
+			fieldError := fmt.Errorf("%s: %s", decoder.field.Name(), iter.Error.Error())
+
+			// Store the formatted error
+			iter.CollectedErrors = append(iter.CollectedErrors, fieldError)
+
+			// Reset error to continue processing
+			iter.Error = prevError
+		} else if len(iter.CollectedErrors) > prevErrorCount {
+			// Handle the case where an error was collected but not set as iter.Error
+			lastIdx := len(iter.CollectedErrors) - 1
+			iter.CollectedErrors[lastIdx] = fmt.Errorf("%s: %s",
+				decoder.field.Name(), iter.CollectedErrors[lastIdx].Error())
+		}
+	} else {
+		// Standard mode - stop on first error
+		decoder.fieldDecoder.Decode(fieldPtr, iter)
+		if iter.Error != nil && iter.Error != io.EOF {
+			iter.Error = fmt.Errorf("%s: %s", decoder.field.Name(), iter.Error.Error())
+		}
 	}
 }
 
