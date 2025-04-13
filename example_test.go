@@ -127,3 +127,56 @@ func (m *MyKey) UnmarshalText(text []byte) error {
 	*m = MyKey(text[:3])
 	return nil
 }
+
+// This example demonstrates using safe unmarshalling to handle type mismatches gracefully.
+func ExampleConfigSafe_Unmarshal() {
+	// JSON with type mismatches: age should be an int, metadata should be a map
+	var jsonBlob = []byte(`{
+		"user_id": "user123",
+		"email": "user@example.com",
+		"age": "thirty",
+		"metadata": ["item1", "item2"],
+		"tags": "not-an-array"
+	}`)
+
+	type UserProfile struct {
+		UserID   string                 `json:"user_id"`
+		Email    string                 `json:"email"`
+		Age      int                    `json:"age"`
+		Metadata map[string]interface{} `json:"metadata"`
+		Tags     []string               `json:"tags"`
+	}
+
+	// Using standard unmarshalling
+	var profile1 UserProfile
+	err1 := ConfigCompatibleWithStandardLibrary.Unmarshal(jsonBlob, &profile1)
+	fmt.Println("Standard unmarshalling:")
+	fmt.Println("Error:", err1 != nil)
+
+	// Using safe unmarshalling
+	var profile2 UserProfile
+	err2 := ConfigSafe.Unmarshal(jsonBlob, &profile2)
+	fmt.Println("\nSafe unmarshalling:")
+	fmt.Println("Error:", err2 != nil)
+
+	// Check if it's a composite error
+	if compErr, ok := err2.(*CompositeError); ok {
+		fmt.Printf("Found %d errors\n", len(compErr.Errors))
+	}
+
+	// Even with errors, successfully parsed fields are available
+	fmt.Println("Successfully parsed fields:")
+	fmt.Printf("UserID: %s\n", profile2.UserID)
+	fmt.Printf("Email: %s\n", profile2.Email)
+
+	// Output:
+	// Standard unmarshalling:
+	// Error: true
+	//
+	// Safe unmarshalling:
+	// Error: true
+	// Found 3 errors
+	// Successfully parsed fields:
+	// UserID: user123
+	// Email: user@example.com
+}

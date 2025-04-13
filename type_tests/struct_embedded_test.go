@@ -1,3 +1,6 @@
+//go:build !vet
+// +build !vet
+
 package test
 
 func init() {
@@ -94,15 +97,18 @@ type OverlapDifferentLevels struct {
 	F1 string
 }
 
+//nolint:govet
 type IgnoreDeeperLevelDoubleEmbedded struct {
 	F1 int32 `json:"F1"`
 }
 
+//nolint:govet
 type IgnoreDeeperLevelE1 struct {
 	IgnoreDeeperLevelDoubleEmbedded
 	F1 int32
 }
 
+//nolint:govet
 type IgnoreDeeperLevelE2 struct {
 	F1 int32 `json:"F1"`
 	IgnoreDeeperLevelDoubleEmbedded
@@ -114,10 +120,12 @@ type IgnoreDeeperLevel struct {
 	IgnoreDeeperLevelE2
 }
 
+//nolint:govet
 type SameLevel1BothTaggedE1 struct {
 	F1 int32 `json:"F1"`
 }
 
+//nolint:govet
 type SameLevel1BothTaggedE2 struct {
 	F1 int32 `json:"F1"`
 }
@@ -128,46 +136,58 @@ type SameLevel1BothTagged struct {
 	SameLevel1BothTaggedE2
 }
 
+//nolint:govet
 type SameLevel1NoTagsE1 struct {
 	F1 int32
 }
 
+//nolint:govet
 type SameLevel1NoTagsE2 struct {
 	F1 int32
 }
 
+//nolint:govet
 type SameLevel1NoTags struct {
 	SameLevel1NoTagsE1
 	SameLevel1NoTagsE2
 }
 
+//nolint:govet
 type SameLevel1TaggedE1 struct {
 	F1 int32
 }
 
+//nolint:govet
 type SameLevel1TaggedE2 struct {
 	F1 int32 `json:"F1"`
 }
 
+//nolint:govet
 type SameLevel1Tagged struct {
 	SameLevel1TaggedE1
 	SameLevel1TaggedE2
 }
 
+//nolint:govet
 type SameLevel2BothTaggedDE1 struct {
 	F1 int32 `json:"F1"`
 }
 
+//nolint:govet
 type SameLevel2BothTaggedE1 struct {
 	SameLevel2BothTaggedDE1
 }
 
 // DoubleEmbedded2 TEST ONLY
+//
+//nolint:govet
 type SameLevel2BothTaggedDE2 struct {
 	F1 int32 `json:"F1"`
 }
 
 // Embedded2 TEST ONLY
+//
+//nolint:govet
 type SameLevel2BothTaggedE2 struct {
 	SameLevel2BothTaggedDE2
 }
@@ -178,47 +198,61 @@ type SameLevel2BothTagged struct {
 	SameLevel2BothTaggedE2
 }
 
+//nolint:govet
 type SameLevel2NoTagsDE1 struct {
 	F1 int32
 }
 
+//nolint:govet
 type SameLevel2NoTagsE1 struct {
 	SameLevel2NoTagsDE1
 }
 
+//nolint:govet
 type SameLevel2NoTagsDE2 struct {
 	F1 int32
 }
 
+//nolint:govet
 type SameLevel2NoTagsE2 struct {
 	SameLevel2NoTagsDE2
 }
 
+//nolint:govet
 type SameLevel2NoTags struct {
 	SameLevel2NoTagsE1
 	SameLevel2NoTagsE2
 }
 
 // DoubleEmbedded1 TEST ONLY
+//
+//nolint:govet
 type SameLevel2TaggedDE1 struct {
 	F1 int32
 }
 
 // Embedded1 TEST ONLY
+//
+//nolint:govet
 type SameLevel2TaggedE1 struct {
 	SameLevel2TaggedDE1
 }
 
 // DoubleEmbedded2 TEST ONLY
+//
+//nolint:govet
 type SameLevel2TaggedDE2 struct {
 	F1 int32 `json:"F1"`
 }
 
 // Embedded2 TEST ONLY
+//
+//nolint:govet
 type SameLevel2TaggedE2 struct {
 	SameLevel2TaggedDE2
 }
 
+//nolint:govet
 type SameLevel2Tagged struct {
 	SameLevel2TaggedE1
 	SameLevel2TaggedE2
