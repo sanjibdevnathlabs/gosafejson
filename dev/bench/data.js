@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1744550000185,
+  "lastUpdate": 1744560963889,
   "repoUrl": "https://github.com/sanjibdevnathlabs/gosafejson",
   "entries": {
     "Go Benchmark": [
@@ -580,6 +580,122 @@ window.BENCHMARK_DATA = {
             "value": 0,
             "unit": "allocs/op",
             "extra": "154879 times\n4 procs"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "sanjibdevnathlabs",
+            "username": "sanjibdevnathlabs"
+          },
+          "committer": {
+            "name": "sanjibdevnathlabs",
+            "username": "sanjibdevnathlabs"
+          },
+          "id": "8dbf803561b6f6cca63b5a0fff34dd5da999fe10",
+          "message": "Feature/safe unmarshal",
+          "timestamp": "2025-04-12T21:37:39Z",
+          "url": "https://github.com/sanjibdevnathlabs/gosafejson/pull/2/commits/8dbf803561b6f6cca63b5a0fff34dd5da999fe10"
+        },
+        "date": 1744560963061,
+        "tool": "go",
+        "benches": [
+          {
+            "name": "Benchmark_encode_string_with_SetEscapeHTML",
+            "value": 454.9,
+            "unit": "ns/op\t     760 B/op\t       6 allocs/op",
+            "extra": "2661834 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_encode_string_with_SetEscapeHTML - ns/op",
+            "value": 454.9,
+            "unit": "ns/op",
+            "extra": "2661834 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_encode_string_with_SetEscapeHTML - B/op",
+            "value": 760,
+            "unit": "B/op",
+            "extra": "2661834 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_encode_string_with_SetEscapeHTML - allocs/op",
+            "value": 6,
+            "unit": "allocs/op",
+            "extra": "2661834 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_jsoniter_large_file",
+            "value": 11833,
+            "unit": "ns/op\t    4928 B/op\t      78 allocs/op",
+            "extra": "99646 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_jsoniter_large_file - ns/op",
+            "value": 11833,
+            "unit": "ns/op",
+            "extra": "99646 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_jsoniter_large_file - B/op",
+            "value": 4928,
+            "unit": "B/op",
+            "extra": "99646 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_jsoniter_large_file - allocs/op",
+            "value": 78,
+            "unit": "allocs/op",
+            "extra": "99646 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_json_large_file",
+            "value": 32242,
+            "unit": "ns/op\t    8352 B/op\t      14 allocs/op",
+            "extra": "37698 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_json_large_file - ns/op",
+            "value": 32242,
+            "unit": "ns/op",
+            "extra": "37698 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_json_large_file - B/op",
+            "value": 8352,
+            "unit": "B/op",
+            "extra": "37698 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_json_large_file - allocs/op",
+            "value": 14,
+            "unit": "allocs/op",
+            "extra": "37698 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_stream_encode_big_object",
+            "value": 7703,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "157593 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_stream_encode_big_object - ns/op",
+            "value": 7703,
+            "unit": "ns/op",
+            "extra": "157593 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_stream_encode_big_object - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "157593 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_stream_encode_big_object - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "157593 times\n4 procs"
           }
         ]
       }
