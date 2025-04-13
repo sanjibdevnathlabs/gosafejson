@@ -6,4 +6,6 @@
 .cursorrules
 .cursorignore
 .instructions.md
-coverage.out
+*.out
+*_coverage_test.go
+.cursorrrules

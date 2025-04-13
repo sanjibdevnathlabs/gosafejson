@@ -2,6 +2,8 @@ package gosafejson
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"reflect"
 	"sync"
@@ -25,6 +27,7 @@ type Config struct {
 	ValidateJsonRawMessage        bool
 	ObjectFieldMustBeSimpleString bool
 	CaseSensitive                 bool
+	SafeUnmarshal                 bool // When true, continue unmarshalling even when field type mismatches occur
 }
 
 // API the public interface of this package.
@@ -58,12 +61,39 @@ var ConfigCompatibleWithStandardLibrary = Config{
 	ValidateJsonRawMessage: true,
 }.Froze()
 
+// ConfigSafe uses safe unmarshalling to continue the process even when type mismatches occur
+var ConfigSafe = Config{
+	EscapeHTML:             true,
+	SortMapKeys:            true,
+	ValidateJsonRawMessage: true,
+	SafeUnmarshal:          true,
+}.Froze()
+
 // ConfigFastest marshals float with only 6 digits precision
 var ConfigFastest = Config{
 	EscapeHTML:                    false,
 	MarshalFloatWith6Digits:       true, // will lose precession
 	ObjectFieldMustBeSimpleString: true, // do not unescape object field
 }.Froze()
+
+// CompositeError is used to collect and return multiple errors during safe unmarshalling
+type CompositeError struct {
+	Errors []error
+}
+
+func (ce *CompositeError) Error() string {
+	if len(ce.Errors) == 0 {
+		return "no errors"
+	}
+	if len(ce.Errors) == 1 {
+		return ce.Errors[0].Error()
+	}
+	msg := fmt.Sprintf("%d errors occurred during safe unmarshalling:\n", len(ce.Errors))
+	for i, err := range ce.Errors {
+		msg += fmt.Sprintf("  %d: %s\n", i+1, err.Error())
+	}
+	return msg
+}
 
 type frozenConfig struct {
 	configBeforeFrozen            Config
@@ -80,6 +110,7 @@ type frozenConfig struct {
 	streamPool                    *sync.Pool
 	iteratorPool                  *sync.Pool
 	caseSensitive                 bool
+	safeUnmarshal                 bool
 }
 
 func (cfg *frozenConfig) initCache() {
@@ -134,6 +165,7 @@ func (cfg Config) Froze() API {
 		onlyTaggedField:               cfg.OnlyTaggedField,
 		disallowUnknownFields:         cfg.DisallowUnknownFields,
 		caseSensitive:                 cfg.CaseSensitive,
+		safeUnmarshal:                 cfg.SafeUnmarshal,
 	}
 	api.streamPool = &sync.Pool{
 		New: func() interface{} {
@@ -323,19 +355,29 @@ func (cfg *frozenConfig) MarshalIndent(v interface{}, prefix, indent string) ([]
 }
 
 func (cfg *frozenConfig) UnmarshalFromString(str string, v interface{}) error {
+	if len(str) == 0 {
+		return io.EOF
+	}
 	data := []byte(str)
 	iter := cfg.BorrowIterator(data)
 	defer cfg.ReturnIterator(iter)
+	typ := reflect2.TypeOf(v)
+	if typ.Kind() != reflect.Ptr {
+		return errors.New("unmarshal need ptr")
+	}
 	iter.ReadVal(v)
-	c := iter.nextToken()
-	if c == 0 {
-		if iter.Error == io.EOF {
-			return nil
-		}
+
+	// Handle errors based on unmarshal mode
+	if iter.Error != nil && iter.Error != io.EOF {
 		return iter.Error
 	}
-	iter.ReportError("Unmarshal", "there are bytes left after unmarshal")
-	return iter.Error
+
+	// For safe unmarshalling mode, return any collected errors
+	if cfg.safeUnmarshal && len(iter.CollectedErrors) > 0 {
+		return &CompositeError{Errors: iter.CollectedErrors}
+	}
+
+	return nil
 }
 
 func (cfg *frozenConfig) Get(data []byte, path ...interface{}) Any {
@@ -345,18 +387,28 @@ func (cfg *frozenConfig) Get(data []byte, path ...interface{}) Any {
 }
 
 func (cfg *frozenConfig) Unmarshal(data []byte, v interface{}) error {
+	if len(data) == 0 {
+		return io.EOF
+	}
 	iter := cfg.BorrowIterator(data)
 	defer cfg.ReturnIterator(iter)
+	typ := reflect2.TypeOf(v)
+	if typ.Kind() != reflect.Ptr {
+		return errors.New("unmarshal need ptr")
+	}
 	iter.ReadVal(v)
-	c := iter.nextToken()
-	if c == 0 {
-		if iter.Error == io.EOF {
-			return nil
-		}
+
+	// Handle errors based on unmarshal mode
+	if iter.Error != nil && iter.Error != io.EOF {
 		return iter.Error
 	}
-	iter.ReportError("Unmarshal", "there are bytes left after unmarshal")
-	return iter.Error
+
+	// For safe unmarshalling mode, return any collected errors
+	if cfg.safeUnmarshal && len(iter.CollectedErrors) > 0 {
+		return &CompositeError{Errors: iter.CollectedErrors}
+	}
+
+	return nil
 }
 
 func (cfg *frozenConfig) NewEncoder(writer io.Writer) *Encoder {

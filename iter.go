@@ -78,42 +78,46 @@ type Iterator struct {
 	captureStartedAt int
 	captured         []byte
 	Error            error
+	CollectedErrors  []error     // Collects errors when safe unmarshalling is enabled
 	Attachment       interface{} // open for customized decoder
 }
 
 // NewIterator creates an empty Iterator instance
 func NewIterator(cfg API) *Iterator {
 	return &Iterator{
-		cfg:    cfg.(*frozenConfig),
-		reader: nil,
-		buf:    nil,
-		head:   0,
-		tail:   0,
-		depth:  0,
+		cfg:             cfg.(*frozenConfig),
+		reader:          nil,
+		buf:             nil,
+		head:            0,
+		tail:            0,
+		depth:           0,
+		CollectedErrors: make([]error, 0),
 	}
 }
 
 // Parse creates an Iterator instance from io.Reader
 func Parse(cfg API, reader io.Reader, bufSize int) *Iterator {
 	return &Iterator{
-		cfg:    cfg.(*frozenConfig),
-		reader: reader,
-		buf:    make([]byte, bufSize),
-		head:   0,
-		tail:   0,
-		depth:  0,
+		cfg:             cfg.(*frozenConfig),
+		reader:          reader,
+		buf:             make([]byte, bufSize),
+		head:            0,
+		tail:            0,
+		depth:           0,
+		CollectedErrors: make([]error, 0),
 	}
 }
 
 // ParseBytes creates an Iterator instance from byte array
 func ParseBytes(cfg API, input []byte) *Iterator {
 	return &Iterator{
-		cfg:    cfg.(*frozenConfig),
-		reader: nil,
-		buf:    input,
-		head:   0,
-		tail:   len(input),
-		depth:  0,
+		cfg:             cfg.(*frozenConfig),
+		reader:          nil,
+		buf:             input,
+		head:            0,
+		tail:            len(input),
+		depth:           0,
+		CollectedErrors: make([]error, 0),
 	}
 }
 
@@ -133,6 +137,8 @@ func (iter *Iterator) Reset(reader io.Reader) *Iterator {
 	iter.head = 0
 	iter.tail = 0
 	iter.depth = 0
+	iter.Error = nil
+	iter.CollectedErrors = make([]error, 0)
 	return iter
 }
 
@@ -143,6 +149,8 @@ func (iter *Iterator) ResetBytes(input []byte) *Iterator {
 	iter.head = 0
 	iter.tail = len(input)
 	iter.depth = 0
+	iter.Error = nil
+	iter.CollectedErrors = make([]error, 0)
 	return iter
 }
 
@@ -222,8 +230,16 @@ func (iter *Iterator) ReportError(operation string, msg string) {
 		contextEnd = iter.tail
 	}
 	context := string(iter.buf[contextStart:contextEnd])
-	iter.Error = fmt.Errorf("%s: %s, error found in #%v byte of ...|%s|..., bigger context ...|%s|...",
+	newError := fmt.Errorf("%s: %s, error found in #%v byte of ...|%s|..., bigger context ...|%s|...",
 		operation, msg, iter.head-peekStart, parsing, context)
+
+	if iter.cfg.safeUnmarshal {
+		// In safe mode, collect the error but don't stop processing
+		iter.CollectedErrors = append(iter.CollectedErrors, newError)
+	} else {
+		// In normal mode, stop processing immediately
+		iter.Error = newError
+	}
 }
 
 // CurrentBuffer gets current buffer as string for debugging purpose
