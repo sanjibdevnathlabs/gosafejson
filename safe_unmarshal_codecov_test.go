@@ -2046,3 +2046,226 @@ func TestSafeUnmarshal_FinalCodecovPush(t *testing.T) {
 		}
 	})
 }
+
+// Hyper-targeted tests to hit exact WhatIsNext() case branches missing coverage
+func TestSafeUnmarshal_ExactWhatIsNextCaseBranches(t *testing.T) {
+	should := require.New(t)
+
+	// Test StringValue case branch in stringCodec
+	t.Run("string_decoder_string_value_case", func(t *testing.T) {
+		type TestStruct struct {
+			Field string `json:"field"`
+		}
+		// This should hit the StringValue case in stringCodec
+		jsonStr := `{"field": "actual-string-value"}`
+		var result TestStruct
+		err := ConfigSafe.Unmarshal([]byte(jsonStr), &result)
+		should.NoError(err)
+		should.Equal("actual-string-value", result.Field)
+	})
+
+	// Test NumberValue case branches in all numeric decoders
+	t.Run("numeric_decoders_number_value_cases", func(t *testing.T) {
+		type TestStruct struct {
+			Int8Field    int8    `json:"int8"`
+			Int16Field   int16   `json:"int16"`
+			Int32Field   int32   `json:"int32"`
+			Int64Field   int64   `json:"int64"`
+			Uint8Field   uint8   `json:"uint8"`
+			Uint16Field  uint16  `json:"uint16"`
+			Uint32Field  uint32  `json:"uint32"`
+			Uint64Field  uint64  `json:"uint64"`
+			Float32Field float32 `json:"float32"`
+			Float64Field float64 `json:"float64"`
+		}
+		// This should hit all NumberValue cases in numeric decoders
+		jsonStr := `{
+			"int8": 8,
+			"int16": 16,
+			"int32": 32,
+			"int64": 64,
+			"uint8": 8,
+			"uint16": 16,
+			"uint32": 32,
+			"uint64": 64,
+			"float32": 3.2,
+			"float64": 6.4
+		}`
+		var result TestStruct
+		err := ConfigSafe.Unmarshal([]byte(jsonStr), &result)
+		should.NoError(err)
+		should.Equal(int8(8), result.Int8Field)
+		should.Equal(int16(16), result.Int16Field)
+		should.Equal(int32(32), result.Int32Field)
+		should.Equal(int64(64), result.Int64Field)
+		should.Equal(uint8(8), result.Uint8Field)
+		should.Equal(uint16(16), result.Uint16Field)
+		should.Equal(uint32(32), result.Uint32Field)
+		should.Equal(uint64(64), result.Uint64Field)
+		should.Equal(float32(3.2), result.Float32Field)
+		should.Equal(float64(6.4), result.Float64Field)
+	})
+
+	// Test BoolValue case branch in boolCodec
+	t.Run("bool_decoder_bool_value_case", func(t *testing.T) {
+		type TestStruct struct {
+			TrueField  bool `json:"true_field"`
+			FalseField bool `json:"false_field"`
+		}
+		// This should hit the BoolValue case in boolCodec
+		jsonStr := `{"true_field": true, "false_field": false}`
+		var result TestStruct
+		err := ConfigSafe.Unmarshal([]byte(jsonStr), &result)
+		should.NoError(err)
+		should.Equal(true, result.TrueField)
+		should.Equal(false, result.FalseField)
+	})
+
+	// Test default case branches (wrong types) for all decoders
+	t.Run("all_decoders_default_case_branches", func(t *testing.T) {
+		type TestStruct struct {
+			StringField  string  `json:"string_field"`
+			Int8Field    int8    `json:"int8_field"`
+			Int16Field   int16   `json:"int16_field"`
+			Int32Field   int32   `json:"int32_field"`
+			Int64Field   int64   `json:"int64_field"`
+			Uint8Field   uint8   `json:"uint8_field"`
+			Uint16Field  uint16  `json:"uint16_field"`
+			Uint32Field  uint32  `json:"uint32_field"`
+			Uint64Field  uint64  `json:"uint64_field"`
+			Float32Field float32 `json:"float32_field"`
+			Float64Field float64 `json:"float64_field"`
+			BoolField    bool    `json:"bool_field"`
+		}
+		// Each field gets wrong type to hit default case branches
+		jsonStr := `{
+			"string_field": 123,
+			"int8_field": "not-a-number",
+			"int16_field": "not-a-number",
+			"int32_field": "not-a-number",
+			"int64_field": "not-a-number",
+			"uint8_field": "not-a-number",
+			"uint16_field": "not-a-number",
+			"uint32_field": "not-a-number",
+			"uint64_field": "not-a-number",
+			"float32_field": "not-a-number",
+			"float64_field": "not-a-number",
+			"bool_field": "not-a-bool"
+		}`
+		var result TestStruct
+		err := ConfigSafe.Unmarshal([]byte(jsonStr), &result)
+		should.NoError(err) // Safe mode should handle gracefully
+
+		// All should be default values (hitting default case branches)
+		should.Equal("", result.StringField)
+		should.Equal(int8(0), result.Int8Field)
+		should.Equal(int16(0), result.Int16Field)
+		should.Equal(int32(0), result.Int32Field)
+		should.Equal(int64(0), result.Int64Field)
+		should.Equal(uint8(0), result.Uint8Field)
+		should.Equal(uint16(0), result.Uint16Field)
+		should.Equal(uint32(0), result.Uint32Field)
+		should.Equal(uint64(0), result.Uint64Field)
+		should.Equal(float32(0), result.Float32Field)
+		should.Equal(float64(0), result.Float64Field)
+		should.Equal(false, result.BoolField)
+	})
+
+	// Test specific combinations to hit more case branches
+	t.Run("mixed_correct_and_wrong_types", func(t *testing.T) {
+		type TestStruct struct {
+			CorrectString string  `json:"correct_string"`
+			WrongString   string  `json:"wrong_string"`
+			CorrectInt    int32   `json:"correct_int"`
+			WrongInt      int32   `json:"wrong_int"`
+			CorrectBool   bool    `json:"correct_bool"`
+			WrongBool     bool    `json:"wrong_bool"`
+			CorrectFloat  float64 `json:"correct_float"`
+			WrongFloat    float64 `json:"wrong_float"`
+		}
+
+		jsonStr := `{
+			"correct_string": "valid-string",
+			"wrong_string": 123,
+			"correct_int": 42,
+			"wrong_int": "not-a-number",
+			"correct_bool": true,
+			"wrong_bool": "not-a-bool",
+			"correct_float": 3.14,
+			"wrong_float": "not-a-float"
+		}`
+		var result TestStruct
+		err := ConfigSafe.Unmarshal([]byte(jsonStr), &result)
+		should.NoError(err)
+
+		// Correct values should be parsed
+		should.Equal("valid-string", result.CorrectString)
+		should.Equal(int32(42), result.CorrectInt)
+		should.Equal(true, result.CorrectBool)
+		should.Equal(3.14, result.CorrectFloat)
+
+		// Wrong values should be defaults
+		should.Equal("", result.WrongString)
+		should.Equal(int32(0), result.WrongInt)
+		should.Equal(false, result.WrongBool)
+		should.Equal(float64(0), result.WrongFloat)
+	})
+
+	// Test with null values to hit any null handling case branches
+	t.Run("null_values_case_branches", func(t *testing.T) {
+		type TestStruct struct {
+			StringField  string  `json:"string_field"`
+			Int32Field   int32   `json:"int32_field"`
+			BoolField    bool    `json:"bool_field"`
+			Float64Field float64 `json:"float64_field"`
+		}
+
+		jsonStr := `{
+			"string_field": null,
+			"int32_field": null,
+			"bool_field": null,
+			"float64_field": null
+		}`
+		var result TestStruct
+		err := ConfigSafe.Unmarshal([]byte(jsonStr), &result)
+		should.NoError(err)
+
+		// All should be default values
+		should.Equal("", result.StringField)
+		should.Equal(int32(0), result.Int32Field)
+		should.Equal(false, result.BoolField)
+		should.Equal(float64(0), result.Float64Field)
+	})
+
+	// Test with object/array values to hit any remaining case branches
+	t.Run("object_array_values_case_branches", func(t *testing.T) {
+		type TestStruct struct {
+			StringField1 string `json:"string1"`
+			StringField2 string `json:"string2"`
+			IntField1    int32  `json:"int1"`
+			IntField2    int32  `json:"int2"`
+			BoolField1   bool   `json:"bool1"`
+			BoolField2   bool   `json:"bool2"`
+		}
+
+		jsonStr := `{
+			"string1": {"object": "value"},
+			"string2": ["array", "value"],
+			"int1": {"object": "value"},
+			"int2": ["array", "value"],
+			"bool1": {"object": "value"},
+			"bool2": ["array", "value"]
+		}`
+		var result TestStruct
+		err := ConfigSafe.Unmarshal([]byte(jsonStr), &result)
+		should.NoError(err)
+
+		// All should be default values (hitting default cases for object/array types)
+		should.Equal("", result.StringField1)
+		should.Equal("", result.StringField2)
+		should.Equal(int32(0), result.IntField1)
+		should.Equal(int32(0), result.IntField2)
+		should.Equal(false, result.BoolField1)
+		should.Equal(false, result.BoolField2)
+	})
+}
