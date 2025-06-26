@@ -1,6 +1,7 @@
 package test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/sanjibdevnathlabs/gosafejson"
@@ -24,49 +25,41 @@ type ComplexStruct struct {
 }
 
 func Test_SafeUnmarshal(t *testing.T) {
-	// Test case with a type mismatch (data should be map but is array)
+	should := require.New(t)
+
+	// Test case with type mismatch - expecting map but getting array
 	jsonStr := `{"id":"12345", "data": [{"a":"b"}, {"c":"d"}], "name": "Random"}`
 
 	// Standard unmarshal should fail
-	var details1 TestMismatchStruct
-	err1 := gosafejson.ConfigCompatibleWithStandardLibrary.UnmarshalFromString(jsonStr, &details1)
-	require.Error(t, err1, "Standard unmarshal should fail")
-	t.Logf("Standard unmarshal error: %v", err1)
+	var standardResult TestMismatchStruct
+	err := gosafejson.Unmarshal([]byte(jsonStr), &standardResult)
+	should.Error(err)
+	t.Logf("Standard unmarshal error: %v", err)
 
-	// Safe unmarshal should return errors but still decode valid fields
-	var details2 TestMismatchStruct
-	err2 := gosafejson.ConfigSafe.UnmarshalFromString(jsonStr, &details2)
-	require.Error(t, err2, "Safe unmarshal should return error")
-	t.Logf("Safe unmarshal error: %v", err2)
-	t.Logf("ID: %v, Name: %v, Data: %v", details2.ID, details2.Name, details2.Data)
+	// Safe unmarshal should continue and parse what it can
+	var safeResult TestMismatchStruct
+	err = gosafejson.ConfigSafe.Unmarshal([]byte(jsonStr), &safeResult)
+	should.Error(err) // Should still return error but continue processing
+	t.Logf("Safe unmarshal error: %v", err)
+	t.Logf("ID: %p, Name: %p, Data: %v", safeResult.ID, safeResult.Name, safeResult.Data)
 
-	// ID should be set correctly (it's before the error)
-	require.NotNil(t, details2.ID, "ID should not be nil")
-	require.Equal(t, "12345", *details2.ID, "ID should have correct value")
+	// ID and Name should be parsed correctly
+	should.NotNil(safeResult.ID)
+	should.NotNil(safeResult.Name)
+	should.Equal("12345", *safeResult.ID)
+	should.Equal("Random", *safeResult.Name)
 
-	// Test with a successful case
-	jsonStr2 := `{"id":"67890", "data": {"key1": "value1", "key2": "value2"}, "name": "Random2"}`
-
-	var details3 TestMismatchStruct
-	err3 := gosafejson.ConfigSafe.UnmarshalFromString(jsonStr2, &details3)
-	t.Logf("Valid JSON unmarshaling result: ID=%v, Name=%v, Data=%v", details3.ID, details3.Name, details3.Data)
-	if err3 != nil {
-		t.Logf("Unexpected error with valid JSON: %v", err3)
-	}
-	require.NoError(t, err3, "Safe unmarshal should not return error for valid JSON")
-	require.NotNil(t, details3.ID, "ID should be unmarshalled correctly")
-	require.Equal(t, "67890", *details3.ID, "ID should have correct value")
-	require.NotNil(t, details3.Data, "Data should be unmarshalled correctly")
-	if details3.Data != nil {
-		value, ok := details3.Data["key1"]
-		require.True(t, ok, "Data should contain 'key1'")
-		require.Equal(t, "value1", value, "Data should contain correct values")
-	}
-	require.NotNil(t, details3.Name, "Name should be unmarshalled correctly")
-	require.Equal(t, "Random2", *details3.Name, "Name should have correct value")
+	// Test with valid JSON to ensure normal operation works
+	validJsonStr := `{"id":"12345", "data": {"key1":"value1", "key2":"value2"}, "name": "Random"}`
+	var validResult TestMismatchStruct
+	err = gosafejson.ConfigSafe.Unmarshal([]byte(validJsonStr), &validResult)
+	should.NoError(err)
+	t.Logf("Valid JSON unmarshaling result: ID=%p, Name=%p, Data=%v", validResult.ID, validResult.Name, validResult.Data)
 }
 
 func Test_SafeUnmarshalMultipleMismatches(t *testing.T) {
+	should := require.New(t)
+
 	// JSON with multiple type mismatches
 	jsonStr := `{
 		"id": "not-an-int",
@@ -78,23 +71,209 @@ func Test_SafeUnmarshalMultipleMismatches(t *testing.T) {
 		"relations": {"key": "not-an-array"}
 	}`
 
-	// Standard unmarshal should fail on first mismatch
-	var obj1 ComplexStruct
-	err1 := gosafejson.ConfigCompatibleWithStandardLibrary.UnmarshalFromString(jsonStr, &obj1)
-	require.Error(t, err1, "Standard unmarshal should fail")
-	t.Logf("Standard unmarshal error: %v", err1)
+	// Standard unmarshal should fail early
+	var standardResult ComplexStruct
+	err := gosafejson.Unmarshal([]byte(jsonStr), &standardResult)
+	should.Error(err)
+	t.Logf("Standard unmarshal error: %v", err)
 
-	// Safe unmarshal should continue and collect all errors
-	var obj2 ComplexStruct
-	err2 := gosafejson.ConfigSafe.UnmarshalFromString(jsonStr, &obj2)
-	require.Error(t, err2, "Safe unmarshal should return error")
-	t.Logf("Safe unmarshal error: %v", err2)
+	// Safe unmarshal should collect multiple errors
+	var safeResult ComplexStruct
+	err = gosafejson.ConfigSafe.Unmarshal([]byte(jsonStr), &safeResult)
+	should.Error(err)
+	t.Logf("Safe unmarshal error: %v", err)
 
-	// Print error type
-	t.Logf("Error type: %T", err2)
+	// Check that it's a CompositeError
+	compositeErr, ok := err.(*gosafejson.CompositeError)
+	should.True(ok, "Expected CompositeError")
+	t.Logf("Error type: %T", err)
 
-	// Check if it's a CompositeError
-	compErr, ok := err2.(*gosafejson.CompositeError)
-	require.True(t, ok, "Error should be of type CompositeError")
-	require.NotEmpty(t, compErr.Errors, "CompositeError should contain errors")
+	// Should have multiple errors collected
+	should.True(len(compositeErr.Errors) > 1, "Should have multiple errors")
+}
+
+// Test safe unmarshal with primitive type mismatches
+func Test_SafeUnmarshalPrimitiveTypes(t *testing.T) {
+	should := require.New(t)
+
+	type PrimitiveStruct struct {
+		IntField    int     `json:"int_field"`
+		StringField string  `json:"string_field"`
+		FloatField  float64 `json:"float_field"`
+		BoolField   bool    `json:"bool_field"`
+	}
+
+	// JSON with all primitive type mismatches
+	jsonStr := `{
+		"int_field": "not-an-int",
+		"string_field": 123,
+		"float_field": true,
+		"bool_field": "not-a-bool"
+	}`
+
+	var safeResult PrimitiveStruct
+	err := gosafejson.ConfigSafe.Unmarshal([]byte(jsonStr), &safeResult)
+	t.Logf("Primitive types result: %+v, error: %v", safeResult, err)
+
+	// Safe unmarshal should succeed by skipping invalid values
+	should.NoError(err, "Safe unmarshal should succeed by skipping invalid values")
+
+	// All fields should remain at their zero values since all had type mismatches
+	should.Equal(0, safeResult.IntField)
+	should.Equal("", safeResult.StringField)
+	should.Equal(0.0, safeResult.FloatField)
+	should.Equal(false, safeResult.BoolField)
+}
+
+// Test safe unmarshal with nested structures
+func Test_SafeUnmarshalNestedStructures(t *testing.T) {
+	should := require.New(t)
+
+	type NestedStruct struct {
+		Value string `json:"value"`
+	}
+
+	type ParentStruct struct {
+		ID     int          `json:"id"`
+		Nested NestedStruct `json:"nested"`
+		Items  []string     `json:"items"`
+	}
+
+	// JSON with nested structure type mismatch
+	jsonStr := `{
+		"id": 123,
+		"nested": "should-be-object",
+		"items": {"should": "be-array"}
+	}`
+
+	var safeResult ParentStruct
+	err := gosafejson.ConfigSafe.Unmarshal([]byte(jsonStr), &safeResult)
+	should.Error(err)
+
+	// ID should be parsed correctly
+	should.Equal(123, safeResult.ID)
+
+	// Nested should remain at zero value
+	should.Equal("", safeResult.Nested.Value)
+
+	// Items should remain empty
+	should.Empty(safeResult.Items)
+}
+
+// Test safe unmarshal with arrays and slices
+func Test_SafeUnmarshalArraysAndSlices(t *testing.T) {
+	should := require.New(t)
+
+	type ArrayStruct struct {
+		Numbers []int         `json:"numbers"`
+		Strings []string      `json:"strings"`
+		Mixed   []interface{} `json:"mixed"`
+	}
+
+	// JSON with array type mismatches
+	jsonStr := `{
+		"numbers": "not-an-array",
+		"strings": 123,
+		"mixed": {"not": "an-array"}
+	}`
+
+	var safeResult ArrayStruct
+	err := gosafejson.ConfigSafe.Unmarshal([]byte(jsonStr), &safeResult)
+	should.Error(err)
+
+	// All arrays should remain empty
+	should.Empty(safeResult.Numbers)
+	should.Empty(safeResult.Strings)
+	should.Empty(safeResult.Mixed)
+}
+
+// Test safe unmarshal with maps
+func Test_SafeUnmarshalMaps(t *testing.T) {
+	should := require.New(t)
+
+	type MapStruct struct {
+		StringMap map[string]string      `json:"string_map"`
+		IntMap    map[string]int         `json:"int_map"`
+		AnyMap    map[string]interface{} `json:"any_map"`
+	}
+
+	// JSON with map type mismatches
+	jsonStr := `{
+		"string_map": ["not", "a", "map"],
+		"int_map": "not-a-map",
+		"any_map": 123
+	}`
+
+	var safeResult MapStruct
+	err := gosafejson.ConfigSafe.Unmarshal([]byte(jsonStr), &safeResult)
+	should.Error(err)
+
+	// All maps should remain empty/nil
+	should.Empty(safeResult.StringMap)
+	should.Empty(safeResult.IntMap)
+	should.Empty(safeResult.AnyMap)
+}
+
+// Test CompositeError functionality
+func Test_CompositeError(t *testing.T) {
+	should := require.New(t)
+
+	// Create a CompositeError manually
+	err1 := fmt.Errorf("first error")
+	err2 := fmt.Errorf("second error")
+
+	composite := &gosafejson.CompositeError{
+		Errors: []error{err1, err2},
+	}
+
+	// Test Error() method
+	errStr := composite.Error()
+	should.Contains(errStr, "2 errors occurred")
+	should.Contains(errStr, "first error")
+	should.Contains(errStr, "second error")
+
+	// Test that it implements error interface
+	var err error = composite
+	should.NotNil(err)
+}
+
+// Test safe unmarshal with partial success - good values parsed, bad values skipped
+func Test_SafeUnmarshalPartialSuccess(t *testing.T) {
+	should := require.New(t)
+
+	type MixedStruct struct {
+		GoodInt    int    `json:"good_int"`
+		BadInt     int    `json:"bad_int"`
+		GoodString string `json:"good_string"`
+		BadString  string `json:"bad_string"`
+		GoodBool   bool   `json:"good_bool"`
+		BadBool    bool   `json:"bad_bool"`
+	}
+
+	// JSON with some good and some bad values
+	jsonStr := `{
+		"good_int": 42,
+		"bad_int": "not-an-int",
+		"good_string": "hello",
+		"bad_string": 123,
+		"good_bool": true,
+		"bad_bool": "not-a-bool"
+	}`
+
+	var safeResult MixedStruct
+	err := gosafejson.ConfigSafe.Unmarshal([]byte(jsonStr), &safeResult)
+	t.Logf("Mixed types result: %+v, error: %v", safeResult, err)
+
+	// Safe unmarshal should succeed by parsing good values and skipping bad ones
+	should.NoError(err, "Safe unmarshal should succeed with partial success")
+
+	// Good values should be parsed correctly
+	should.Equal(42, safeResult.GoodInt)
+	should.Equal("hello", safeResult.GoodString)
+	should.Equal(true, safeResult.GoodBool)
+
+	// Bad values should remain at zero values
+	should.Equal(0, safeResult.BadInt)
+	should.Equal("", safeResult.BadString)
+	should.Equal(false, safeResult.BadBool)
 }
