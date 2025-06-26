@@ -1418,3 +1418,147 @@ func TestStructFieldDecoder_ErrorHandling(t *testing.T) {
 		should.Error(err) // This should error even in safe mode due to malformed JSON
 	})
 }
+
+// Final push for codecov coverage - target remaining edge cases
+func TestSafeUnmarshal_FinalCoverageEdgeCases(t *testing.T) {
+	should := require.New(t)
+
+	// Test the exact error return path in config.go when len(iter.CollectedErrors) > 0
+	t.Run("config_composite_error_return_path", func(t *testing.T) {
+		type TestStruct struct {
+			Map1   map[string]int    `json:"map1"`
+			Map2   map[string]string `json:"map2"`
+			Slice1 []int             `json:"slice1"`
+			Slice2 []string          `json:"slice2"`
+		}
+		// Multiple type mismatches to ensure CollectedErrors > 0
+		jsonStr := `{
+			"map1": "not-a-map",
+			"map2": [1, 2, 3],
+			"slice1": "not-a-slice",
+			"slice2": {"not": "a-slice"}
+		}`
+		var result TestStruct
+		err := ConfigSafe.Unmarshal([]byte(jsonStr), &result)
+
+		// This should return a CompositeError with multiple errors
+		should.Error(err, "Should return error with multiple type mismatches")
+		compositeErr, ok := err.(*CompositeError)
+		should.True(ok, "Error should be CompositeError type")
+		should.NotEmpty(compositeErr.Errors, "Should have collected multiple errors")
+		should.True(len(compositeErr.Errors) >= 2, "Should have multiple collected errors")
+
+		// Verify the error message contains information about multiple errors
+		errorMsg := compositeErr.Error()
+		should.Contains(errorMsg, "errors occurred during safe unmarshalling", "Error message should indicate multiple errors")
+	})
+
+	// Test ReportError vs direct error setting paths
+	t.Run("report_error_vs_direct_error", func(t *testing.T) {
+		type TestStruct struct {
+			Value string `json:"value"`
+		}
+
+		// Test safe mode - should use ReportError
+		jsonStr := `{"value": 123}`
+		var result1 TestStruct
+		err1 := ConfigSafe.Unmarshal([]byte(jsonStr), &result1)
+		should.NoError(err1, "Safe mode should handle type mismatch gracefully")
+		should.Equal("", result1.Value, "Should use default value")
+
+		// Test normal mode - should set error directly
+		var result2 TestStruct
+		err2 := ConfigCompatibleWithStandardLibrary.Unmarshal([]byte(jsonStr), &result2)
+		should.Error(err2, "Normal mode should return error on type mismatch")
+	})
+
+	// Test iterator Reset functionality with collected errors
+	t.Run("iterator_reset_with_collected_errors", func(t *testing.T) {
+		iter := ConfigSafe.BorrowIterator([]byte(`{"field": "wrong-type-for-int"}`))
+		defer ConfigSafe.ReturnIterator(iter)
+
+		// Cause some errors to be collected
+		iter.ReadObjectCB(func(iter *Iterator, field string) bool {
+			if field == "field" {
+				// Try to read as int, should collect error in safe mode
+				iter.ReadInt()
+			}
+			return true
+		})
+
+		// Reset should clear collected errors
+		iter.ResetBytes([]byte(`{"valid": "json"}`))
+		should.Empty(iter.CollectedErrors, "Reset should clear collected errors")
+
+		// ResetBytes should also clear collected errors
+		iter.ResetBytes([]byte(`{"another": "valid-json"}`))
+		should.Empty(iter.CollectedErrors, "ResetBytes should clear collected errors")
+	})
+
+	// Test specific WhatIsNext() branches that might be missed
+	t.Run("whatsnext_all_branches", func(t *testing.T) {
+		type TestStruct struct {
+			StringVal string `json:"string_val"`
+			IntVal    int    `json:"int_val"`
+			BoolVal   bool   `json:"bool_val"`
+		}
+
+		// Test each JSON value type against wrong Go type
+		testCases := []struct {
+			name     string
+			jsonStr  string
+			expected TestStruct
+		}{
+			{
+				name:     "object_for_primitives",
+				jsonStr:  `{"string_val": {"nested": "object"}, "int_val": {"nested": "object"}, "bool_val": {"nested": "object"}}`,
+				expected: TestStruct{StringVal: "", IntVal: 0, BoolVal: false},
+			},
+			{
+				name:     "array_for_primitives",
+				jsonStr:  `{"string_val": [1, 2, 3], "int_val": [1, 2, 3], "bool_val": [1, 2, 3]}`,
+				expected: TestStruct{StringVal: "", IntVal: 0, BoolVal: false},
+			},
+			{
+				name:     "null_for_primitives",
+				jsonStr:  `{"string_val": null, "int_val": null, "bool_val": null}`,
+				expected: TestStruct{StringVal: "", IntVal: 0, BoolVal: false},
+			},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				var result TestStruct
+				err := ConfigSafe.Unmarshal([]byte(tc.jsonStr), &result)
+				should.NoError(err, "Safe mode should handle all type mismatches gracefully")
+				should.Equal(tc.expected, result, "Should use default values for mismatched types")
+			})
+		}
+	})
+
+	// Test the specific unreadByte() calls in map and slice decoders
+	t.Run("unread_byte_coverage", func(t *testing.T) {
+		type TestStruct struct {
+			MapField   map[string]string `json:"map_field"`
+			SliceField []string          `json:"slice_field"`
+		}
+
+		// These should trigger the unreadByte() and Skip() paths
+		jsonStr := `{"map_field": 123, "slice_field": 456}`
+		var result TestStruct
+		err := ConfigSafe.Unmarshal([]byte(jsonStr), &result)
+		if err != nil {
+			compositeErr, ok := err.(*CompositeError)
+			should.True(ok, "Should return CompositeError")
+			should.NotEmpty(compositeErr.Errors, "Should have collected errors")
+		}
+		should.Nil(result.MapField, "Map should remain nil")
+		should.Nil(result.SliceField, "Slice should remain nil")
+	})
+
+	// Test edge case: empty CompositeError
+	t.Run("empty_composite_error", func(t *testing.T) {
+		ce := &CompositeError{Errors: []error{}}
+		should.Equal("no errors", ce.Error(), "Empty CompositeError should return 'no errors'")
+	})
+}
