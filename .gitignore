@@ -9,3 +9,5 @@
 *.out
 *_coverage_test.go
 .cursorrrules
+coverage.out
+.cursor
