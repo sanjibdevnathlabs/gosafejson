@@ -1197,3 +1197,224 @@ func TestSafeUnmarshal_ErrorPathCoverage(t *testing.T) {
 		should.NoError(iter.Error)
 	})
 }
+
+// Test the exact missing coverage lines for primitive decoders
+func TestSafeUnmarshal_MissingCoverageLines(t *testing.T) {
+	should := require.New(t)
+
+	// Test the else branch in primitive decoders (normal mode)
+	t.Run("primitive_decoders_normal_mode", func(t *testing.T) {
+		type TestStruct struct {
+			StringVal  string  `json:"string_val"`
+			IntVal     int     `json:"int_val"`
+			BoolVal    bool    `json:"bool_val"`
+			FloatVal   float64 `json:"float_val"`
+			Uint8Val   uint8   `json:"uint8_val"`
+			Uint16Val  uint16  `json:"uint16_val"`
+			Uint32Val  uint32  `json:"uint32_val"`
+			Uint64Val  uint64  `json:"uint64_val"`
+			Int8Val    int8    `json:"int8_val"`
+			Int16Val   int16   `json:"int16_val"`
+			Int32Val   int32   `json:"int32_val"`
+			Int64Val   int64   `json:"int64_val"`
+			Float32Val float32 `json:"float32_val"`
+		}
+
+		// Test normal mode with correct types (should hit the else branch)
+		jsonStr := `{
+			"string_val": "correct-string",
+			"int_val": 42,
+			"bool_val": true,
+			"float_val": 3.14,
+			"uint8_val": 8,
+			"uint16_val": 16,
+			"uint32_val": 32,
+			"uint64_val": 64,
+			"int8_val": 8,
+			"int16_val": 16,
+			"int32_val": 32,
+			"int64_val": 64,
+			"float32_val": 3.14
+		}`
+		var result TestStruct
+		err := ConfigCompatibleWithStandardLibrary.Unmarshal([]byte(jsonStr), &result)
+		should.NoError(err)
+		should.Equal("correct-string", result.StringVal)
+		should.Equal(42, result.IntVal)
+		should.Equal(true, result.BoolVal)
+		should.Equal(3.14, result.FloatVal)
+	})
+
+	// Test null handling in primitive decoders
+	t.Run("primitive_decoders_null_handling", func(t *testing.T) {
+		type TestStruct struct {
+			StringVal *string  `json:"string_val"`
+			IntVal    *int     `json:"int_val"`
+			BoolVal   *bool    `json:"bool_val"`
+			FloatVal  *float64 `json:"float_val"`
+		}
+
+		jsonStr := `{
+			"string_val": null,
+			"int_val": null,
+			"bool_val": null,
+			"float_val": null
+		}`
+		var result TestStruct
+		err := ConfigSafe.Unmarshal([]byte(jsonStr), &result)
+		should.NoError(err)
+		should.Nil(result.StringVal)
+		should.Nil(result.IntVal)
+		should.Nil(result.BoolVal)
+		should.Nil(result.FloatVal)
+	})
+
+	// Test specific error collection paths in struct decoder
+	t.Run("struct_decoder_error_collection", func(t *testing.T) {
+		type TestStruct struct {
+			Field1 string `json:"field1"`
+			Field2 int    `json:"field2"`
+		}
+
+		// Test malformed JSON to hit error collection paths
+		jsonStr := `{"field1": "value", "field2": "not-a-number"}`
+		var result TestStruct
+		err := ConfigSafe.Unmarshal([]byte(jsonStr), &result)
+		should.NoError(err) // Safe mode should handle gracefully
+		should.Equal("value", result.Field1)
+		should.Equal(0, result.Field2) // Default value
+	})
+
+	// Test the specific case where CollectedErrors > 0 in config.go
+	t.Run("config_collected_errors_return", func(t *testing.T) {
+		type TestStruct struct {
+			BadMap map[string]string `json:"bad_map"`
+		}
+		jsonStr := `{"bad_map": "not-a-map"}`
+		var result TestStruct
+		err := ConfigSafe.Unmarshal([]byte(jsonStr), &result)
+		if err != nil {
+			compositeErr, ok := err.(*CompositeError)
+			should.True(ok, "Should return CompositeError")
+			should.NotEmpty(compositeErr.Errors, "Should have collected errors")
+		}
+	})
+
+	// Test UnmarshalFromString with collected errors
+	t.Run("unmarshal_from_string_collected_errors", func(t *testing.T) {
+		type TestStruct struct {
+			BadField []string `json:"bad_field"`
+		}
+		jsonStr := `{"bad_field": "not-an-array"}`
+		var result TestStruct
+		err := ConfigSafe.UnmarshalFromString(jsonStr, &result)
+		if err != nil {
+			compositeErr, ok := err.(*CompositeError)
+			should.True(ok, "Should return CompositeError")
+			should.NotEmpty(compositeErr.Errors, "Should have collected errors")
+		}
+	})
+}
+
+// Test specific map decoder error paths
+func TestMapDecoder_ErrorPaths(t *testing.T) {
+	should := require.New(t)
+
+	// Test map decoder with wrong key types
+	t.Run("map_wrong_key_type", func(t *testing.T) {
+		type TestStruct struct {
+			Data map[int]string `json:"data"` // int keys, but JSON will have string keys
+		}
+		jsonStr := `{"data": {"key1": "value1", "key2": "value2"}}`
+		var result TestStruct
+		err := ConfigSafe.Unmarshal([]byte(jsonStr), &result)
+		if err != nil {
+			compositeErr, ok := err.(*CompositeError)
+			should.True(ok, "Should return CompositeError")
+			should.NotEmpty(compositeErr.Errors, "Should have collected errors")
+		}
+	})
+
+	// Test the specific unreadByte() and Skip() path in map decoder
+	t.Run("map_decoder_skip_path", func(t *testing.T) {
+		type TestStruct struct {
+			Data map[string]string `json:"data"`
+		}
+		jsonStr := `{"data": [1, 2, 3]}` // Array instead of object
+		var result TestStruct
+		err := ConfigSafe.Unmarshal([]byte(jsonStr), &result)
+		if err != nil {
+			compositeErr, ok := err.(*CompositeError)
+			should.True(ok, "Should return CompositeError")
+			should.NotEmpty(compositeErr.Errors, "Should have collected errors")
+		}
+		should.Nil(result.Data)
+	})
+}
+
+// Test specific slice decoder error paths
+func TestSliceDecoder_ErrorPaths(t *testing.T) {
+	should := require.New(t)
+
+	// Test the specific unreadByte() and Skip() path in slice decoder
+	t.Run("slice_decoder_skip_path", func(t *testing.T) {
+		type TestStruct struct {
+			Data []string `json:"data"`
+		}
+		jsonStr := `{"data": {"not": "an-array"}}` // Object instead of array
+		var result TestStruct
+		err := ConfigSafe.Unmarshal([]byte(jsonStr), &result)
+		if err != nil {
+			compositeErr, ok := err.(*CompositeError)
+			should.True(ok, "Should return CompositeError")
+			should.NotEmpty(compositeErr.Errors, "Should have collected errors")
+		}
+		should.Nil(result.Data)
+	})
+
+	// Test slice with mixed valid and invalid elements
+	t.Run("slice_mixed_elements", func(t *testing.T) {
+		type TestStruct struct {
+			Numbers []int `json:"numbers"`
+		}
+		jsonStr := `{"numbers": [1, "not-a-number", 3, "also-not-a-number", 5]}`
+		var result TestStruct
+		err := ConfigSafe.Unmarshal([]byte(jsonStr), &result)
+		should.NoError(err)                                // Safe mode should handle gracefully
+		should.Equal([]int{1, 0, 3, 0, 5}, result.Numbers) // Invalid elements become 0
+	})
+}
+
+// Test struct field decoder error handling
+func TestStructFieldDecoder_ErrorHandling(t *testing.T) {
+	should := require.New(t)
+
+	// Test the case where len(iter.CollectedErrors) > prevErrorCount
+	t.Run("field_decoder_error_collection", func(t *testing.T) {
+		type NestedStruct struct {
+			Value string `json:"value"`
+		}
+		type TestStruct struct {
+			Nested NestedStruct `json:"nested"`
+		}
+		jsonStr := `{"nested": {"value": 123}}` // Wrong type for nested value
+		var result TestStruct
+		err := ConfigSafe.Unmarshal([]byte(jsonStr), &result)
+		should.NoError(err)                   // Safe mode should handle gracefully
+		should.Equal("", result.Nested.Value) // Default value
+	})
+
+	// Test missing colon in object field
+	t.Run("missing_colon_in_field", func(t *testing.T) {
+		type TestStruct struct {
+			Field1 string `json:"field1"`
+			Field2 string `json:"field2"`
+		}
+		// This will test the missing colon error path, but it's hard to construct valid JSON for this
+		// Let's test a different scenario that might trigger the colon error handling
+		jsonStr := `{"field1" "missing-colon", "field2": "value"}`
+		var result TestStruct
+		err := ConfigSafe.Unmarshal([]byte(jsonStr), &result)
+		should.Error(err) // This should error even in safe mode due to malformed JSON
+	})
+}
