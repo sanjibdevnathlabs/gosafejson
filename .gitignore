@@ -6,5 +6,9 @@
 .cursorrules
 .cursorignore
 .instructions.md
+*.out
+*_coverage_test.go
+.cursorrrules
 coverage.out
 .cursor
+memory*

@@ -504,15 +504,42 @@ func (decoder *generalStructDecoder) Decode(ptr unsafe.Pointer, iter *Iterator) 
 		return
 	}
 	var c byte
-	for c = ','; c == ','; c = iter.nextToken() {
-		decoder.decodeOneField(ptr, iter)
+
+	// In safe mode, continue even when errors occur
+	if iter.cfg.safeUnmarshal {
+		for c = ','; c == ','; c = iter.nextToken() {
+			// Save the current error state before processing this field
+			savedError := iter.Error
+
+			// Process this field
+			decoder.decodeOneField(ptr, iter)
+
+			// If a new error occurred during field processing, collect it and reset
+			if iter.Error != nil && iter.Error != savedError && iter.Error != io.EOF {
+				// Save this error
+				iter.CollectedErrors = append(iter.CollectedErrors, iter.Error)
+				// Reset error to continue processing
+				iter.Error = savedError
+			}
+		}
+
+		// Handle object end
+		if c != '}' {
+			iter.ReportError("struct Decode", `expect }, but found `+string([]byte{c}))
+		}
+	} else {
+		// Original behavior for non-safe mode
+		for c = ','; c == ','; c = iter.nextToken() {
+			decoder.decodeOneField(ptr, iter)
+		}
+		if iter.Error != nil && iter.Error != io.EOF && len(decoder.typ.Type1().Name()) != 0 {
+			iter.Error = fmt.Errorf("%v.%s", decoder.typ, iter.Error.Error())
+		}
+		if c != '}' {
+			iter.ReportError("struct Decode", `expect }, but found `+string([]byte{c}))
+		}
 	}
-	if iter.Error != nil && iter.Error != io.EOF && len(decoder.typ.Type1().Name()) != 0 {
-		iter.Error = fmt.Errorf("%v.%s", decoder.typ, iter.Error.Error())
-	}
-	if c != '}' {
-		iter.ReportError("struct Decode", `expect }, but found `+string([]byte{c}))
-	}
+
 	iter.decrementDepth()
 }
 
@@ -548,7 +575,14 @@ func (decoder *generalStructDecoder) decodeOneField(ptr unsafe.Pointer, iter *It
 	c := iter.nextToken()
 	if c != ':' {
 		iter.ReportError("ReadObject", "expect : after object field, but found "+string([]byte{c}))
+		// In safe mode, try to skip the value even if colon is missing
+		if iter.cfg.safeUnmarshal {
+			iter.Skip()
+		}
+		return
 	}
+
+	// Decode the field - the field decoder will handle safe mode internally
 	fieldDecoder.Decode(ptr, iter)
 }
 
@@ -1051,9 +1085,37 @@ type structFieldDecoder struct {
 
 func (decoder *structFieldDecoder) Decode(ptr unsafe.Pointer, iter *Iterator) {
 	fieldPtr := decoder.field.UnsafeGet(ptr)
-	decoder.fieldDecoder.Decode(fieldPtr, iter)
-	if iter.Error != nil && iter.Error != io.EOF {
-		iter.Error = fmt.Errorf("%s: %s", decoder.field.Name(), iter.Error.Error())
+
+	if iter.cfg.safeUnmarshal {
+		// In safe mode, capture the current error state to detect new errors
+		prevErrorCount := len(iter.CollectedErrors)
+		prevError := iter.Error
+
+		// Try to decode the value
+		decoder.fieldDecoder.Decode(fieldPtr, iter)
+
+		// If a new error occurred during field decoding
+		if iter.Error != nil && iter.Error != io.EOF {
+			// Format the error with field name
+			fieldError := fmt.Errorf("%s: %s", decoder.field.Name(), iter.Error.Error())
+
+			// Store the formatted error
+			iter.CollectedErrors = append(iter.CollectedErrors, fieldError)
+
+			// Reset error to continue processing
+			iter.Error = prevError
+		} else if len(iter.CollectedErrors) > prevErrorCount {
+			// Handle the case where an error was collected but not set as iter.Error
+			lastIdx := len(iter.CollectedErrors) - 1
+			iter.CollectedErrors[lastIdx] = fmt.Errorf("%s: %s",
+				decoder.field.Name(), iter.CollectedErrors[lastIdx].Error())
+		}
+	} else {
+		// Standard mode - stop on first error
+		decoder.fieldDecoder.Decode(fieldPtr, iter)
+		if iter.Error != nil && iter.Error != io.EOF {
+			iter.Error = fmt.Errorf("%s: %s", decoder.field.Name(), iter.Error.Error())
+		}
 	}
 }
 

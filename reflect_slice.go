@@ -2,9 +2,10 @@ package gosafejson
 
 import (
 	"fmt"
-	"github.com/modern-go/reflect2"
 	"io"
 	"unsafe"
+
+	"github.com/modern-go/reflect2"
 )
 
 func decoderOfSlice(ctx *ctx, typ reflect2.Type) ValDecoder {
@@ -73,6 +74,13 @@ func (decoder *sliceDecoder) doDecode(ptr unsafe.Pointer, iter *Iterator) {
 	}
 	if c != '[' {
 		iter.ReportError("decode slice", "expect [ or n, but found "+string([]byte{c}))
+		if iter.cfg.safeUnmarshal {
+			iter.unreadByte()
+			iter.Skip()
+			// In safe mode, set to nil slice and continue
+			sliceType.UnsafeSetNil(ptr)
+			return
+		}
 		return
 	}
 	c = iter.nextToken()
