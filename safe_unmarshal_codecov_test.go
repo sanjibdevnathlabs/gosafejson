@@ -978,3 +978,222 @@ func TestSafeUnmarshal_AdditionalEdgeCases(t *testing.T) {
 		should.Equal(false, result.Data["item3"].Active) // Default value for bool
 	})
 }
+
+// Test specific code paths added in the PR for codecov coverage
+func TestSafeUnmarshal_SpecificCodePaths(t *testing.T) {
+	should := require.New(t)
+
+	// Test specific WhatIsNext() code paths in primitive decoders
+	t.Run("string_decoder_whatsnext_paths", func(t *testing.T) {
+		type TestStruct struct {
+			Value string `json:"value"`
+		}
+
+		// Test NumberValue path
+		jsonStr := `{"value": 123}`
+		var result TestStruct
+		err := ConfigSafe.Unmarshal([]byte(jsonStr), &result)
+		should.NoError(err)
+		should.Equal("", result.Value) // Should skip and use default
+
+		// Test BoolValue path
+		jsonStr = `{"value": true}`
+		err = ConfigSafe.Unmarshal([]byte(jsonStr), &result)
+		should.NoError(err)
+		should.Equal("", result.Value) // Should skip and use default
+
+		// Test ObjectValue path
+		jsonStr = `{"value": {"nested": "object"}}`
+		err = ConfigSafe.Unmarshal([]byte(jsonStr), &result)
+		should.NoError(err)
+		should.Equal("", result.Value) // Should skip and use default
+
+		// Test ArrayValue path
+		jsonStr = `{"value": [1, 2, 3]}`
+		err = ConfigSafe.Unmarshal([]byte(jsonStr), &result)
+		should.NoError(err)
+		should.Equal("", result.Value) // Should skip and use default
+
+		// Test NilValue path
+		jsonStr = `{"value": null}`
+		err = ConfigSafe.Unmarshal([]byte(jsonStr), &result)
+		should.NoError(err)
+		should.Equal("", result.Value) // Should handle null
+	})
+
+	t.Run("bool_decoder_whatsnext_paths", func(t *testing.T) {
+		type TestStruct struct {
+			Value bool `json:"value"`
+		}
+
+		// Test NumberValue path
+		jsonStr := `{"value": 123}`
+		var result TestStruct
+		err := ConfigSafe.Unmarshal([]byte(jsonStr), &result)
+		should.NoError(err)
+		should.Equal(false, result.Value) // Should skip and use default
+
+		// Test StringValue path
+		jsonStr = `{"value": "not-a-bool"}`
+		err = ConfigSafe.Unmarshal([]byte(jsonStr), &result)
+		should.NoError(err)
+		should.Equal(false, result.Value) // Should skip and use default
+
+		// Test ObjectValue path
+		jsonStr = `{"value": {"nested": "object"}}`
+		err = ConfigSafe.Unmarshal([]byte(jsonStr), &result)
+		should.NoError(err)
+		should.Equal(false, result.Value) // Should skip and use default
+
+		// Test ArrayValue path
+		jsonStr = `{"value": [1, 2, 3]}`
+		err = ConfigSafe.Unmarshal([]byte(jsonStr), &result)
+		should.NoError(err)
+		should.Equal(false, result.Value) // Should skip and use default
+	})
+
+	// Test all numeric decoders with non-numeric values
+	t.Run("numeric_decoders_non_numeric_paths", func(t *testing.T) {
+		type TestStruct struct {
+			Int8Val    int8    `json:"int8_val"`
+			Int16Val   int16   `json:"int16_val"`
+			Int32Val   int32   `json:"int32_val"`
+			Int64Val   int64   `json:"int64_val"`
+			Uint8Val   uint8   `json:"uint8_val"`
+			Uint16Val  uint16  `json:"uint16_val"`
+			Uint32Val  uint32  `json:"uint32_val"`
+			Uint64Val  uint64  `json:"uint64_val"`
+			Float32Val float32 `json:"float32_val"`
+			Float64Val float64 `json:"float64_val"`
+		}
+
+		// Test with string values (non-numeric)
+		jsonStr := `{
+			"int8_val": "not-a-number",
+			"int16_val": "not-a-number",
+			"int32_val": "not-a-number",
+			"int64_val": "not-a-number",
+			"uint8_val": "not-a-number",
+			"uint16_val": "not-a-number",
+			"uint32_val": "not-a-number",
+			"uint64_val": "not-a-number",
+			"float32_val": "not-a-number",
+			"float64_val": "not-a-number"
+		}`
+		var result TestStruct
+		err := ConfigSafe.Unmarshal([]byte(jsonStr), &result)
+		should.NoError(err) // Safe mode should handle gracefully
+
+		// All should be default values
+		should.Equal(int8(0), result.Int8Val)
+		should.Equal(int16(0), result.Int16Val)
+		should.Equal(int32(0), result.Int32Val)
+		should.Equal(int64(0), result.Int64Val)
+		should.Equal(uint8(0), result.Uint8Val)
+		should.Equal(uint16(0), result.Uint16Val)
+		should.Equal(uint32(0), result.Uint32Val)
+		should.Equal(uint64(0), result.Uint64Val)
+		should.Equal(float32(0), result.Float32Val)
+		should.Equal(float64(0), result.Float64Val)
+	})
+
+	// Test the specific iter.cfg.safeUnmarshal branches
+	t.Run("safe_unmarshal_config_branches", func(t *testing.T) {
+		type TestStruct struct {
+			Value string `json:"value"`
+		}
+
+		// Test with ConfigSafe (safeUnmarshal = true)
+		jsonStr := `{"value": 123}`
+		var safeResult TestStruct
+		err := ConfigSafe.Unmarshal([]byte(jsonStr), &safeResult)
+		should.NoError(err)
+		should.Equal("", safeResult.Value)
+
+		// Test with ConfigCompatibleWithStandardLibrary (safeUnmarshal = false)
+		var normalResult TestStruct
+		err = ConfigCompatibleWithStandardLibrary.Unmarshal([]byte(jsonStr), &normalResult)
+		should.Error(err) // Should fail in normal mode
+	})
+
+	// Test ReportError paths in safe vs normal mode
+	t.Run("report_error_safe_vs_normal", func(t *testing.T) {
+		// Test safe mode error collection
+		safeIter := ConfigSafe.BorrowIterator([]byte(`{"test": "value"}`))
+		defer ConfigSafe.ReturnIterator(safeIter)
+
+		safeIter.ReportError("test", "error in safe mode")
+		should.Len(safeIter.CollectedErrors, 1)
+		should.NoError(safeIter.Error) // Should not set Error in safe mode
+
+		// Test normal mode error setting
+		normalIter := ConfigCompatibleWithStandardLibrary.BorrowIterator([]byte(`{"test": "value"}`))
+		defer ConfigCompatibleWithStandardLibrary.ReturnIterator(normalIter)
+
+		normalIter.ReportError("test", "error in normal mode")
+		should.Error(normalIter.Error)           // Should set Error in normal mode
+		should.Empty(normalIter.CollectedErrors) // Should not collect in normal mode
+	})
+}
+
+// Test the exact UnmarshalFromString and Unmarshal error paths
+func TestSafeUnmarshal_ErrorPathCoverage(t *testing.T) {
+	should := require.New(t)
+
+	// Test UnmarshalFromString with non-pointer
+	t.Run("unmarshal_from_string_non_pointer", func(t *testing.T) {
+		var result map[string]interface{}
+		err := ConfigSafe.UnmarshalFromString("{}", result) // Not a pointer
+		should.Error(err)
+		should.Contains(err.Error(), "unmarshal need ptr")
+	})
+
+	// Test Unmarshal with non-pointer
+	t.Run("unmarshal_non_pointer", func(t *testing.T) {
+		var result map[string]interface{}
+		err := ConfigSafe.Unmarshal([]byte("{}"), result) // Not a pointer
+		should.Error(err)
+		should.Contains(err.Error(), "unmarshal need ptr")
+	})
+
+	// Test CompositeError return path
+	t.Run("composite_error_return", func(t *testing.T) {
+		type TestStruct struct {
+			BadSlice []string          `json:"bad_slice"`
+			BadMap   map[string]string `json:"bad_map"`
+		}
+		jsonStr := `{"bad_slice": "not-an-array", "bad_map": [1,2,3]}`
+		var result TestStruct
+		err := ConfigSafe.Unmarshal([]byte(jsonStr), &result)
+		if err != nil {
+			compositeErr, ok := err.(*CompositeError)
+			should.True(ok, "Should return CompositeError")
+			should.NotEmpty(compositeErr.Errors, "Should have collected errors")
+		}
+	})
+
+	// Test iterator Reset and ResetBytes error clearing
+	t.Run("iterator_reset_error_clearing", func(t *testing.T) {
+		iter := ConfigSafe.BorrowIterator([]byte(`{"test": "value"}`))
+		defer ConfigSafe.ReturnIterator(iter)
+
+		// Add errors
+		iter.ReportError("test", "error1")
+		iter.ReportError("test", "error2")
+		should.Len(iter.CollectedErrors, 2)
+
+		// Test Reset clears errors
+		iter.Reset(nil)
+		should.Len(iter.CollectedErrors, 0)
+		should.NoError(iter.Error)
+
+		// Add error again
+		iter.ReportError("test", "error3")
+		should.Len(iter.CollectedErrors, 1)
+
+		// Test ResetBytes clears errors
+		iter.ResetBytes([]byte(`{"new": "data"}`))
+		should.Len(iter.CollectedErrors, 0)
+		should.NoError(iter.Error)
+	})
+}
