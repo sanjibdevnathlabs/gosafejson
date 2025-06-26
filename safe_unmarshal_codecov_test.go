@@ -1178,8 +1178,8 @@ func TestSafeUnmarshal_ErrorPathCoverage(t *testing.T) {
 		defer ConfigSafe.ReturnIterator(iter)
 
 		// Add errors
-		iter.ReportError("test", "error1")
-		iter.ReportError("test", "error2")
+		iter.ReportError("test1", "error1")
+		iter.ReportError("test2", "error2")
 		should.Len(iter.CollectedErrors, 2)
 
 		// Test Reset clears errors
@@ -1188,7 +1188,7 @@ func TestSafeUnmarshal_ErrorPathCoverage(t *testing.T) {
 		should.NoError(iter.Error)
 
 		// Add error again
-		iter.ReportError("test", "error3")
+		iter.ReportError("test3", "error3")
 		should.Len(iter.CollectedErrors, 1)
 
 		// Test ResetBytes clears errors
@@ -1392,16 +1392,21 @@ func TestStructFieldDecoder_ErrorHandling(t *testing.T) {
 	// Test the case where len(iter.CollectedErrors) > prevErrorCount
 	t.Run("field_decoder_error_collection", func(t *testing.T) {
 		type NestedStruct struct {
-			Value string `json:"value"`
+			Value1 string `json:"value1"`
+			Value2 int    `json:"value2"`
 		}
 		type TestStruct struct {
-			Nested NestedStruct `json:"nested"`
+			Nested1 NestedStruct `json:"nested1"`
+			Nested2 NestedStruct `json:"nested2"`
 		}
-		jsonStr := `{"nested": {"value": 123}}` // Wrong type for nested value
+		jsonStr := `{"nested1": {"value1": 123, "value2": "not-a-number"}, "nested2": {"value1": true, "value2": "also-not-a-number"}}`
 		var result TestStruct
 		err := ConfigSafe.Unmarshal([]byte(jsonStr), &result)
-		should.NoError(err)                   // Safe mode should handle gracefully
-		should.Equal("", result.Nested.Value) // Default value
+		should.NoError(err)                     // Safe mode should handle gracefully
+		should.Equal("", result.Nested1.Value1) // Default value
+		should.Equal(0, result.Nested1.Value2)  // Default value
+		should.Equal("", result.Nested2.Value1) // Default value
+		should.Equal(0, result.Nested2.Value2)  // Default value
 	})
 
 	// Test missing colon in object field
@@ -1560,5 +1565,216 @@ func TestSafeUnmarshal_FinalCoverageEdgeCases(t *testing.T) {
 	t.Run("empty_composite_error", func(t *testing.T) {
 		ce := &CompositeError{Errors: []error{}}
 		should.Equal("no errors", ce.Error(), "Empty CompositeError should return 'no errors'")
+	})
+}
+
+// Ultra-specific tests to hit the exact missing codecov lines
+func TestSafeUnmarshal_UltraSpecificCoverage(t *testing.T) {
+	should := require.New(t)
+
+	// Test the exact line: if iter.cfg.safeUnmarshal in primitive decoders
+	t.Run("hit_safeUnmarshal_check_in_primitives", func(t *testing.T) {
+		// This should hit the exact "if iter.cfg.safeUnmarshal" line in stringCodec.Decode
+		type TestStruct struct {
+			StringField string `json:"str"`
+			IntField    int    `json:"int"`
+			BoolField   bool   `json:"bool"`
+		}
+
+		// Test with ConfigSafe (safeUnmarshal = true) - should hit the if branch
+		jsonStr := `{"str": 123, "int": "not-a-number", "bool": "not-a-bool"}`
+		var safeResult TestStruct
+		err := ConfigSafe.Unmarshal([]byte(jsonStr), &safeResult)
+		should.NoError(err)
+		should.Equal("", safeResult.StringField)  // Default value
+		should.Equal(0, safeResult.IntField)      // Default value
+		should.Equal(false, safeResult.BoolField) // Default value
+
+		// Test with normal config (safeUnmarshal = false) - should hit the else branch
+		var normalResult TestStruct
+		err = ConfigCompatibleWithStandardLibrary.Unmarshal([]byte(`{"str": "valid", "int": 42, "bool": true}`), &normalResult)
+		should.NoError(err)
+		should.Equal("valid", normalResult.StringField)
+		should.Equal(42, normalResult.IntField)
+		should.Equal(true, normalResult.BoolField)
+	})
+
+	// Test the exact line: if len(iter.CollectedErrors) > 0 in config.go
+	t.Run("hit_collected_errors_check_in_config", func(t *testing.T) {
+		type TestStruct struct {
+			BadField1 map[string]string `json:"bad1"`
+			BadField2 []string          `json:"bad2"`
+			BadField3 map[string]int    `json:"bad3"`
+		}
+
+		// This should cause multiple errors to be collected, hitting the len(iter.CollectedErrors) > 0 line
+		jsonStr := `{"bad1": "not-a-map", "bad2": "not-an-array", "bad3": [1,2,3]}`
+		var result TestStruct
+		err := ConfigSafe.Unmarshal([]byte(jsonStr), &result)
+
+		// This should hit the exact line where len(iter.CollectedErrors) > 0 is checked
+		should.Error(err, "Should return CompositeError when multiple errors collected")
+		compositeErr, ok := err.(*CompositeError)
+		should.True(ok, "Should be CompositeError")
+		should.True(len(compositeErr.Errors) >= 2, "Should have multiple errors")
+	})
+
+	// Test the exact line: iter.unreadByte() in map decoder safe mode
+	t.Run("hit_unread_byte_in_map_decoder", func(t *testing.T) {
+		type TestStruct struct {
+			MapField map[string]string `json:"map_field"`
+		}
+
+		// This should hit the exact "iter.unreadByte()" line in mapDecoder when safeUnmarshal is true
+		jsonStr := `{"map_field": 123}` // Number instead of object
+		var result TestStruct
+		err := ConfigSafe.Unmarshal([]byte(jsonStr), &result)
+		if err != nil {
+			compositeErr, ok := err.(*CompositeError)
+			should.True(ok, "Should be CompositeError")
+			should.NotEmpty(compositeErr.Errors, "Should have collected errors")
+		}
+		should.Nil(result.MapField)
+	})
+
+	// Test the exact line: iter.unreadByte() in slice decoder safe mode
+	t.Run("hit_unread_byte_in_slice_decoder", func(t *testing.T) {
+		type TestStruct struct {
+			SliceField []string `json:"slice_field"`
+		}
+
+		// This should hit the exact "iter.unreadByte()" line in sliceDecoder when safeUnmarshal is true
+		jsonStr := `{"slice_field": 123}` // Number instead of array
+		var result TestStruct
+		err := ConfigSafe.Unmarshal([]byte(jsonStr), &result)
+		if err != nil {
+			compositeErr, ok := err.(*CompositeError)
+			should.True(ok, "Should be CompositeError")
+			should.NotEmpty(compositeErr.Errors, "Should have collected errors")
+		}
+		should.Nil(result.SliceField)
+	})
+
+	// Test the exact ReportError vs iter.Error assignment in safe vs normal mode
+	t.Run("hit_report_error_vs_direct_assignment", func(t *testing.T) {
+		// Test safe mode - should call ReportError
+		safeIter := ConfigSafe.BorrowIterator([]byte(`{"test": "value"}`))
+		defer ConfigSafe.ReturnIterator(safeIter)
+
+		// This should hit the ReportError path
+		safeIter.ReportError("test", "safe mode error")
+		should.Len(safeIter.CollectedErrors, 1)
+		should.NoError(safeIter.Error) // Should not set Error directly
+
+		// Test normal mode - should set iter.Error directly
+		normalIter := ConfigCompatibleWithStandardLibrary.BorrowIterator([]byte(`{"test": "value"}`))
+		defer ConfigCompatibleWithStandardLibrary.ReturnIterator(normalIter)
+
+		// This should hit the direct error assignment path
+		normalIter.ReportError("test", "normal mode error")
+		should.Error(normalIter.Error)           // Should set Error directly
+		should.Empty(normalIter.CollectedErrors) // Should not collect
+	})
+
+	// Test the exact lines in struct decoder where errors are collected
+	t.Run("hit_struct_decoder_error_collection_lines", func(t *testing.T) {
+		type NestedStruct struct {
+			Value1 string `json:"value1"`
+			Value2 int    `json:"value2"`
+		}
+		type TestStruct struct {
+			Nested1 NestedStruct `json:"nested1"`
+			Nested2 NestedStruct `json:"nested2"`
+		}
+
+		// This should hit the error collection lines in struct decoder
+		jsonStr := `{"nested1": {"value1": 123, "value2": "not-a-number"}, "nested2": {"value1": true, "value2": "also-not-a-number"}}`
+		var result TestStruct
+		err := ConfigSafe.Unmarshal([]byte(jsonStr), &result)
+		should.NoError(err) // Safe mode should handle gracefully
+
+		// All should be default values
+		should.Equal("", result.Nested1.Value1)
+		should.Equal(0, result.Nested1.Value2)
+		should.Equal("", result.Nested2.Value1)
+		should.Equal(0, result.Nested2.Value2)
+	})
+
+	// Test specific WhatIsNext() return values that might not be covered
+	t.Run("hit_all_whatsnext_return_values", func(t *testing.T) {
+		type TestStruct struct {
+			Field1 string `json:"field1"`
+			Field2 string `json:"field2"`
+			Field3 string `json:"field3"`
+			Field4 string `json:"field4"`
+			Field5 string `json:"field5"`
+		}
+
+		// Test each possible WhatIsNext() return value with string decoder in safe mode
+		jsonStr := `{
+			"field1": 123,
+			"field2": true,
+			"field3": {"object": "value"},
+			"field4": [1, 2, 3],
+			"field5": null
+		}`
+		var result TestStruct
+		err := ConfigSafe.Unmarshal([]byte(jsonStr), &result)
+		should.NoError(err)
+
+		// All should be default values (empty string)
+		should.Equal("", result.Field1)
+		should.Equal("", result.Field2)
+		should.Equal("", result.Field3)
+		should.Equal("", result.Field4)
+		should.Equal("", result.Field5)
+	})
+
+	// Test the exact CompositeError.Error() method with different scenarios
+	t.Run("hit_composite_error_formatting", func(t *testing.T) {
+		// Test single error
+		ce1 := &CompositeError{Errors: []error{errors.New("single error")}}
+		should.Equal("single error", ce1.Error())
+
+		// Test multiple errors (should hit the formatting loop)
+		ce2 := &CompositeError{Errors: []error{
+			errors.New("error one"),
+			errors.New("error two"),
+			errors.New("error three"),
+		}}
+		errorMsg := ce2.Error()
+		should.Contains(errorMsg, "3 errors occurred during safe unmarshalling")
+		should.Contains(errorMsg, "1: error one")
+		should.Contains(errorMsg, "2: error two")
+		should.Contains(errorMsg, "3: error three")
+
+		// Test empty errors (edge case)
+		ce3 := &CompositeError{Errors: []error{}}
+		should.Equal("no errors", ce3.Error())
+	})
+
+	// Test Reset and ResetBytes error clearing (exact lines)
+	t.Run("hit_reset_error_clearing_lines", func(t *testing.T) {
+		iter := ConfigSafe.BorrowIterator([]byte(`{"test": "value"}`))
+		defer ConfigSafe.ReturnIterator(iter)
+
+		// Add errors to be cleared
+		iter.ReportError("test1", "error1")
+		iter.ReportError("test2", "error2")
+		should.Len(iter.CollectedErrors, 2)
+
+		// Test Reset - should clear CollectedErrors
+		iter.Reset(nil)
+		should.Empty(iter.CollectedErrors)
+		should.NoError(iter.Error)
+
+		// Add error again
+		iter.ReportError("test3", "error3")
+		should.Len(iter.CollectedErrors, 1)
+
+		// Test ResetBytes clears errors
+		iter.ResetBytes([]byte(`{"new": "data"}`))
+		should.Empty(iter.CollectedErrors)
+		should.NoError(iter.Error)
 	})
 }
