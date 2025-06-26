@@ -77,6 +77,9 @@ func (decoder *sliceDecoder) doDecode(ptr unsafe.Pointer, iter *Iterator) {
 		if iter.cfg.safeUnmarshal {
 			iter.unreadByte()
 			iter.Skip()
+			// In safe mode, set to nil slice and continue
+			sliceType.UnsafeSetNil(ptr)
+			return
 		}
 		return
 	}
