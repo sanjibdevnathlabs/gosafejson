@@ -206,7 +206,19 @@ type stringCodec struct {
 }
 
 func (codec *stringCodec) Decode(ptr unsafe.Pointer, iter *Iterator) {
-	*((*string)(ptr)) = iter.ReadString()
+	if iter.cfg.safeUnmarshal {
+		// In safe mode, check what type of value we have first
+		switch iter.WhatIsNext() {
+		case StringValue:
+			// Safe to read as string
+			*((*string)(ptr)) = iter.ReadString()
+		default:
+			// Wrong type, skip the value
+			iter.Skip()
+		}
+	} else {
+		*((*string)(ptr)) = iter.ReadString()
+	}
 }
 
 func (codec *stringCodec) Encode(ptr unsafe.Pointer, stream *Stream) {
@@ -223,7 +235,19 @@ type int8Codec struct {
 
 func (codec *int8Codec) Decode(ptr unsafe.Pointer, iter *Iterator) {
 	if !iter.ReadNil() {
-		*((*int8)(ptr)) = iter.ReadInt8()
+		if iter.cfg.safeUnmarshal {
+			// In safe mode, check what type of value we have first
+			switch iter.WhatIsNext() {
+			case NumberValue:
+				// Safe to read as number
+				*((*int8)(ptr)) = iter.ReadInt8()
+			default:
+				// Wrong type, skip the value
+				iter.Skip()
+			}
+		} else {
+			*((*int8)(ptr)) = iter.ReadInt8()
+		}
 	}
 }
 
@@ -240,7 +264,19 @@ type int16Codec struct {
 
 func (codec *int16Codec) Decode(ptr unsafe.Pointer, iter *Iterator) {
 	if !iter.ReadNil() {
-		*((*int16)(ptr)) = iter.ReadInt16()
+		if iter.cfg.safeUnmarshal {
+			// In safe mode, check what type of value we have first
+			switch iter.WhatIsNext() {
+			case NumberValue:
+				// Safe to read as number
+				*((*int16)(ptr)) = iter.ReadInt16()
+			default:
+				// Wrong type, skip the value
+				iter.Skip()
+			}
+		} else {
+			*((*int16)(ptr)) = iter.ReadInt16()
+		}
 	}
 }
 
@@ -257,7 +293,19 @@ type int32Codec struct {
 
 func (codec *int32Codec) Decode(ptr unsafe.Pointer, iter *Iterator) {
 	if !iter.ReadNil() {
-		*((*int32)(ptr)) = iter.ReadInt32()
+		if iter.cfg.safeUnmarshal {
+			// In safe mode, check what type of value we have first
+			switch iter.WhatIsNext() {
+			case NumberValue:
+				// Safe to read as number
+				*((*int32)(ptr)) = iter.ReadInt32()
+			default:
+				// Wrong type, skip the value
+				iter.Skip()
+			}
+		} else {
+			*((*int32)(ptr)) = iter.ReadInt32()
+		}
 	}
 }
 
@@ -274,7 +322,19 @@ type int64Codec struct {
 
 func (codec *int64Codec) Decode(ptr unsafe.Pointer, iter *Iterator) {
 	if !iter.ReadNil() {
-		*((*int64)(ptr)) = iter.ReadInt64()
+		if iter.cfg.safeUnmarshal {
+			// In safe mode, check what type of value we have first
+			switch iter.WhatIsNext() {
+			case NumberValue:
+				// Safe to read as number
+				*((*int64)(ptr)) = iter.ReadInt64()
+			default:
+				// Wrong type, skip the value
+				iter.Skip()
+			}
+		} else {
+			*((*int64)(ptr)) = iter.ReadInt64()
+		}
 	}
 }
 
@@ -291,7 +351,19 @@ type uint8Codec struct {
 
 func (codec *uint8Codec) Decode(ptr unsafe.Pointer, iter *Iterator) {
 	if !iter.ReadNil() {
-		*((*uint8)(ptr)) = iter.ReadUint8()
+		if iter.cfg.safeUnmarshal {
+			// In safe mode, check what type of value we have first
+			switch iter.WhatIsNext() {
+			case NumberValue:
+				// Safe to read as number
+				*((*uint8)(ptr)) = iter.ReadUint8()
+			default:
+				// Wrong type, skip the value
+				iter.Skip()
+			}
+		} else {
+			*((*uint8)(ptr)) = iter.ReadUint8()
+		}
 	}
 }
 
@@ -308,7 +380,19 @@ type uint16Codec struct {
 
 func (codec *uint16Codec) Decode(ptr unsafe.Pointer, iter *Iterator) {
 	if !iter.ReadNil() {
-		*((*uint16)(ptr)) = iter.ReadUint16()
+		if iter.cfg.safeUnmarshal {
+			// In safe mode, check what type of value we have first
+			switch iter.WhatIsNext() {
+			case NumberValue:
+				// Safe to read as number
+				*((*uint16)(ptr)) = iter.ReadUint16()
+			default:
+				// Wrong type, skip the value
+				iter.Skip()
+			}
+		} else {
+			*((*uint16)(ptr)) = iter.ReadUint16()
+		}
 	}
 }
 
@@ -325,7 +409,19 @@ type uint32Codec struct {
 
 func (codec *uint32Codec) Decode(ptr unsafe.Pointer, iter *Iterator) {
 	if !iter.ReadNil() {
-		*((*uint32)(ptr)) = iter.ReadUint32()
+		if iter.cfg.safeUnmarshal {
+			// In safe mode, check what type of value we have first
+			switch iter.WhatIsNext() {
+			case NumberValue:
+				// Safe to read as number
+				*((*uint32)(ptr)) = iter.ReadUint32()
+			default:
+				// Wrong type, skip the value
+				iter.Skip()
+			}
+		} else {
+			*((*uint32)(ptr)) = iter.ReadUint32()
+		}
 	}
 }
 
@@ -342,7 +438,19 @@ type uint64Codec struct {
 
 func (codec *uint64Codec) Decode(ptr unsafe.Pointer, iter *Iterator) {
 	if !iter.ReadNil() {
-		*((*uint64)(ptr)) = iter.ReadUint64()
+		if iter.cfg.safeUnmarshal {
+			// In safe mode, check what type of value we have first
+			switch iter.WhatIsNext() {
+			case NumberValue:
+				// Safe to read as number
+				*((*uint64)(ptr)) = iter.ReadUint64()
+			default:
+				// Wrong type, skip the value
+				iter.Skip()
+			}
+		} else {
+			*((*uint64)(ptr)) = iter.ReadUint64()
+		}
 	}
 }
 
@@ -359,7 +467,19 @@ type float32Codec struct {
 
 func (codec *float32Codec) Decode(ptr unsafe.Pointer, iter *Iterator) {
 	if !iter.ReadNil() {
-		*((*float32)(ptr)) = iter.ReadFloat32()
+		if iter.cfg.safeUnmarshal {
+			// In safe mode, check what type of value we have first
+			switch iter.WhatIsNext() {
+			case NumberValue:
+				// Safe to read as number
+				*((*float32)(ptr)) = iter.ReadFloat32()
+			default:
+				// Wrong type, skip the value
+				iter.Skip()
+			}
+		} else {
+			*((*float32)(ptr)) = iter.ReadFloat32()
+		}
 	}
 }
 
@@ -376,7 +496,19 @@ type float64Codec struct {
 
 func (codec *float64Codec) Decode(ptr unsafe.Pointer, iter *Iterator) {
 	if !iter.ReadNil() {
-		*((*float64)(ptr)) = iter.ReadFloat64()
+		if iter.cfg.safeUnmarshal {
+			// In safe mode, check what type of value we have first
+			switch iter.WhatIsNext() {
+			case NumberValue:
+				// Safe to read as number
+				*((*float64)(ptr)) = iter.ReadFloat64()
+			default:
+				// Wrong type, skip the value
+				iter.Skip()
+			}
+		} else {
+			*((*float64)(ptr)) = iter.ReadFloat64()
+		}
 	}
 }
 
@@ -393,7 +525,19 @@ type boolCodec struct {
 
 func (codec *boolCodec) Decode(ptr unsafe.Pointer, iter *Iterator) {
 	if !iter.ReadNil() {
-		*((*bool)(ptr)) = iter.ReadBool()
+		if iter.cfg.safeUnmarshal {
+			// In safe mode, check what type of value we have first
+			switch iter.WhatIsNext() {
+			case BoolValue:
+				// Safe to read as bool
+				*((*bool)(ptr)) = iter.ReadBool()
+			default:
+				// Wrong type, skip the value
+				iter.Skip()
+			}
+		} else {
+			*((*bool)(ptr)) = iter.ReadBool()
+		}
 	}
 }
 

@@ -508,17 +508,22 @@ func (decoder *generalStructDecoder) Decode(ptr unsafe.Pointer, iter *Iterator) 
 	// In safe mode, continue even when errors occur
 	if iter.cfg.safeUnmarshal {
 		for c = ','; c == ','; c = iter.nextToken() {
-			var prevErr = iter.Error
+			// Save the current error state before processing this field
+			savedError := iter.Error
+
+			// Process this field
 			decoder.decodeOneField(ptr, iter)
-			// Clear the error so we can continue
-			if iter.Error != nil && iter.Error != io.EOF {
-				// Save the error
+
+			// If a new error occurred during field processing, collect it and reset
+			if iter.Error != nil && iter.Error != savedError && iter.Error != io.EOF {
+				// Save this error
 				iter.CollectedErrors = append(iter.CollectedErrors, iter.Error)
-				iter.Error = prevErr
+				// Reset error to continue processing
+				iter.Error = savedError
 			}
 		}
 
-		// Record the object end error if any
+		// Handle object end
 		if c != '}' {
 			iter.ReportError("struct Decode", `expect }, but found `+string([]byte{c}))
 		}
@@ -570,7 +575,14 @@ func (decoder *generalStructDecoder) decodeOneField(ptr unsafe.Pointer, iter *It
 	c := iter.nextToken()
 	if c != ':' {
 		iter.ReportError("ReadObject", "expect : after object field, but found "+string([]byte{c}))
+		// In safe mode, try to skip the value even if colon is missing
+		if iter.cfg.safeUnmarshal {
+			iter.Skip()
+		}
+		return
 	}
+
+	// Decode the field - the field decoder will handle safe mode internally
 	fieldDecoder.Decode(ptr, iter)
 }
 

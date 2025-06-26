@@ -164,6 +164,10 @@ func (decoder *mapDecoder) Decode(ptr unsafe.Pointer, iter *Iterator) {
 	}
 	if c != '{' {
 		iter.ReportError("ReadMapCB", `expect { or n, but found `+string([]byte{c}))
+		if iter.cfg.safeUnmarshal {
+			iter.unreadByte()
+			iter.Skip()
+		}
 		return
 	}
 	c = iter.nextToken()
